@@ -105,3 +105,22 @@ body {
   overflow: hidden;
   transition: all 0.2s ease-out;
 }
+
+/* Logo hue-rotating rainbow gradient animation */
+@keyframes hueRotate {
+  0% {
+    filter: hue-rotate(0deg);
+  }
+  100% {
+    filter: hue-rotate(360deg);
+  }
+}
+
+.logo-rainbow {
+  background: linear-gradient(135deg, #ff0080, #ff8c00, #40e0d0, #ff0080);
+  background-size: 300% 300%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: hueRotate 3s linear infinite;
+}

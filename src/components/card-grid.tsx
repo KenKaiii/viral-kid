@@ -280,7 +280,7 @@ function Logo() {
           "0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1), inset 0 -1px 0 rgba(0,0,0,0.2)",
       }}
     >
-      <h1 className="select-none font-[family-name:var(--font-sixtyfour)] text-4xl tracking-tight text-white">
+      <h1 className="logo-rainbow select-none font-[family-name:var(--font-sixtyfour)] text-4xl tracking-tight">
         Viral Kid
       </h1>
     </div>
