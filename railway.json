@@ -5,6 +5,7 @@
     "dockerfilePath": "Dockerfile"
   },
   "deploy": {
+    "startCommand": "npx prisma db push --skip-generate && npm run start",
     "healthcheckPath": "/",
     "healthcheckTimeout": 120,
     "restartPolicyType": "on_failure",
@@ -14,6 +15,7 @@
     "DATABASE_URL": "${{Postgres.DATABASE_URL}}",
     "REDIS_URL": "${{Redis.REDIS_URL}}",
     "AUTH_SECRET": "",
+    "AUTH_URL": "",
     "NODE_ENV": "production"
   }
 }
