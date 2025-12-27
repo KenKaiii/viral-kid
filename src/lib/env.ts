@@ -24,7 +24,9 @@ export const env = createEnv({
     // Vercel Cron authentication
     CRON_SECRET: z.string().min(1).optional(),
   },
-  client: {},
+  client: {
+    NEXT_PUBLIC_APP_URL: z.string().url().optional(),
+  },
   runtimeEnv: {
     DATABASE_URL: process.env.DATABASE_URL,
     NODE_ENV: process.env.NODE_ENV,
@@ -40,6 +42,8 @@ export const env = createEnv({
     REDIS_URL: process.env.REDIS_URL,
 
     CRON_SECRET: process.env.CRON_SECRET,
+
+    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
   },
   skipValidation: !!process.env.SKIP_ENV_VALIDATION,
   emptyStringAsUndefined: true,

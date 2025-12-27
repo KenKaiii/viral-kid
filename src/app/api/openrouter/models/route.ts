@@ -39,12 +39,30 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { apiKey } = body;
 
-    // Fetch models from OpenRouter API
-    const response = await fetch("https://openrouter.ai/api/v1/models", {
-      headers: {
-        ...(apiKey && { Authorization: `Bearer ${apiKey}` }),
-      },
-    });
+    // Fetch models from OpenRouter API with timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+    let response: Response;
+    try {
+      response = await fetch("https://openrouter.ai/api/v1/models", {
+        headers: {
+          ...(apiKey && { Authorization: `Bearer ${apiKey}` }),
+        },
+        signal: controller.signal,
+      });
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      if (fetchError instanceof Error && fetchError.name === "AbortError") {
+        return NextResponse.json(
+          { error: "Request timed out" },
+          { status: 504 }
+        );
+      }
+      throw fetchError;
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -64,29 +82,39 @@ export async function POST(request: Request) {
       );
     }
 
-    // Upsert all models
+    // Use transaction for batch upserts (more efficient than sequential)
+    const modelData = data.data.map((model) => ({
+      id: model.id,
+      name: model.name || model.id,
+      description: model.description || null,
+      contextLength: model.context_length || 0,
+      pricing: model.pricing ? JSON.stringify(model.pricing) : null,
+    }));
+
+    // Batch upsert using transaction
     let syncedCount = 0;
-    for (const model of data.data) {
+    const BATCH_SIZE = 50;
+
+    for (let i = 0; i < modelData.length; i += BATCH_SIZE) {
+      const batch = modelData.slice(i, i + BATCH_SIZE);
       try {
-        await db.openRouterModel.upsert({
-          where: { id: model.id },
-          update: {
-            name: model.name || model.id,
-            description: model.description || null,
-            contextLength: model.context_length || 0,
-            pricing: model.pricing ? JSON.stringify(model.pricing) : null,
-          },
-          create: {
-            id: model.id,
-            name: model.name || model.id,
-            description: model.description || null,
-            contextLength: model.context_length || 0,
-            pricing: model.pricing ? JSON.stringify(model.pricing) : null,
-          },
-        });
-        syncedCount++;
+        await db.$transaction(
+          batch.map((model) =>
+            db.openRouterModel.upsert({
+              where: { id: model.id },
+              update: {
+                name: model.name,
+                description: model.description,
+                contextLength: model.contextLength,
+                pricing: model.pricing,
+              },
+              create: model,
+            })
+          )
+        );
+        syncedCount += batch.length;
       } catch (dbError) {
-        console.error(`Failed to sync model ${model.id}:`, dbError);
+        console.error(`Failed to sync batch starting at ${i}:`, dbError);
       }
     }
 

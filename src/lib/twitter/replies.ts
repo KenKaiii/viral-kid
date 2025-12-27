@@ -1,5 +1,5 @@
 import type { SendTweetV2Params } from "twitter-api-v2";
-import { twitterRW } from "../twitter";
+import { twitterRW } from "./clients";
 import type {
   ReplyOptions,
   ReplyWithMediaOptions,
@@ -55,7 +55,7 @@ export async function replyToTweet(
       // in the twitter-api-v2 library. The core in_reply_to_tweet_id is fully supported.
     }
 
-    const result = await twitterRW.tweet(payload);
+    const result = await twitterRW.v2.tweet(payload);
 
     return {
       success: true,
@@ -118,7 +118,7 @@ export async function replyWithMedia(
       },
     };
 
-    const result = await twitterRW.tweet(payload);
+    const result = await twitterRW.v2.tweet(payload);
 
     return {
       success: true,

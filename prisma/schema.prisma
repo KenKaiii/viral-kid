@@ -32,6 +32,9 @@ model Account {
   openRouterCredentials OpenRouterCredentials?
   logs                  Log[]
   tweetInteractions     TweetInteraction[]
+
+  @@index([platform])
+  @@index([order])
 }
 
 model TwitterConfiguration {
@@ -188,6 +191,7 @@ model Log {
 
   @@index([accountId])
   @@index([createdAt])
+  @@index([accountId, createdAt])
 }
 
 // Tweet interactions - tracks viral tweets and our responses
@@ -212,4 +216,5 @@ model TweetInteraction {
   @@unique([accountId, tweetId])
   @@index([accountId])
   @@index([createdAt])
+  @@index([accountId, createdAt])
 }

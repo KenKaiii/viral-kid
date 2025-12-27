@@ -21,13 +21,13 @@
  * ```
  */
 
-// Re-export clients from the base twitter module
+// Re-export clients
 export {
   twitter,
   twitterRW,
   twitterClient,
   twitterUserClient,
-} from "../twitter";
+} from "./clients";
 
 // Reply functionality
 export {

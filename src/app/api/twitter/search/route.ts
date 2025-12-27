@@ -98,13 +98,23 @@ export async function POST(request: Request) {
     searchUrl.searchParams.set("category", "Top");
     searchUrl.searchParams.set("filters", JSON.stringify(filters));
 
-    const response = await fetch(searchUrl.toString(), {
-      method: "GET",
-      headers: {
-        "x-rapidapi-host": "twitter-aio.p.rapidapi.com",
-        "x-rapidapi-key": rapidApiKey,
-      },
-    });
+    // Fetch with timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+    let response: Response;
+    try {
+      response = await fetch(searchUrl.toString(), {
+        method: "GET",
+        headers: {
+          "x-rapidapi-host": "twitter-aio.p.rapidapi.com",
+          "x-rapidapi-key": rapidApiKey,
+        },
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -152,38 +162,40 @@ export async function POST(request: Request) {
       }
     }
 
-    // Save tweets to database
+    // Save tweets to database using batch transaction
     let savedCount = 0;
-    for (const tweet of tweets) {
-      try {
-        await db.tweetInteraction.upsert({
-          where: {
-            accountId_tweetId: {
+    try {
+      await db.$transaction(
+        tweets.map((tweet) =>
+          db.tweetInteraction.upsert({
+            where: {
+              accountId_tweetId: {
+                accountId,
+                tweetId: tweet.tweetId,
+              },
+            },
+            update: {
+              userTweet: tweet.userTweet,
+              username: tweet.username,
+              views: tweet.views,
+              hearts: tweet.hearts,
+              replies: tweet.replies,
+            },
+            create: {
               accountId,
               tweetId: tweet.tweetId,
+              userTweet: tweet.userTweet,
+              username: tweet.username,
+              views: tweet.views,
+              hearts: tweet.hearts,
+              replies: tweet.replies,
             },
-          },
-          update: {
-            userTweet: tweet.userTweet,
-            username: tweet.username,
-            views: tweet.views,
-            hearts: tweet.hearts,
-            replies: tweet.replies,
-          },
-          create: {
-            accountId,
-            tweetId: tweet.tweetId,
-            userTweet: tweet.userTweet,
-            username: tweet.username,
-            views: tweet.views,
-            hearts: tweet.hearts,
-            replies: tweet.replies,
-          },
-        });
-        savedCount++;
-      } catch (dbError) {
-        console.error("Failed to save tweet:", dbError);
-      }
+          })
+        )
+      );
+      savedCount = tweets.length;
+    } catch (dbError) {
+      console.error("Failed to save tweets:", dbError);
     }
 
     // Log the search

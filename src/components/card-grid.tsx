@@ -6,7 +6,6 @@ import {
   Twitter,
   Youtube,
   Instagram,
-  Play,
   Database,
   Settings,
   FileText,
@@ -141,7 +140,6 @@ function PlatformCard({
 
       {/* Action buttons */}
       <div className="relative z-10 flex items-center justify-center gap-1 border-t border-white/10 px-4 py-3">
-        <ActionButton icon={<Play className="h-4 w-4" />} label="Run" />
         <ActionButton
           icon={<Database className="h-4 w-4" />}
           label="Database"

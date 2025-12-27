@@ -258,7 +258,9 @@ export function AccountModal({
             });
           }
         })
-        .catch(() => {})
+        .catch((err) => {
+          console.error("Failed to fetch Twitter credentials:", err);
+        })
         .finally(() => setIsLoading(false));
     }
   }, [isOpen, platform, accountId]);
@@ -267,22 +269,32 @@ export function AccountModal({
   useEffect(() => {
     if (isOpen && accountId) {
       fetch(`/api/openrouter/credentials?accountId=${accountId}`)
-        .then((res) => res.json())
+        .then((res) => {
+          if (!res.ok) throw new Error("Failed to fetch");
+          return res.json();
+        })
         .then((data) => {
-          if (data.apiKey) {
+          if (data.hasApiKey) {
             setOpenRouterApiKey(data.apiKey);
           }
         })
-        .catch(() => {});
+        .catch((err) => {
+          console.error("Failed to fetch OpenRouter credentials:", err);
+        });
 
       fetch("/api/openrouter/models")
-        .then((res) => res.json())
+        .then((res) => {
+          if (!res.ok) throw new Error("Failed to fetch");
+          return res.json();
+        })
         .then((data) => {
           if (Array.isArray(data)) {
             setOpenRouterModels(data);
           }
         })
-        .catch(() => {});
+        .catch((err) => {
+          console.error("Failed to fetch OpenRouter models:", err);
+        });
     }
   }, [isOpen, accountId]);
 

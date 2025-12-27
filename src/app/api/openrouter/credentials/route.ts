@@ -30,13 +30,14 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.json({
-      apiKey: credentials.apiKey,
+      apiKey: credentials.apiKey ? "••••••••" : "",
       systemPrompt: credentials.systemPrompt || "",
       selectedModel: credentials.selectedModel || "",
       noHashtags: credentials.noHashtags,
       noEmojis: credentials.noEmojis,
       noCapitalization: credentials.noCapitalization,
       badGrammar: credentials.badGrammar,
+      hasApiKey: !!credentials.apiKey,
     });
   } catch (error) {
     console.error("Failed to fetch OpenRouter credentials:", error);

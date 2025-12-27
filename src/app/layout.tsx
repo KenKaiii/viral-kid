@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Roboto, Sixtyfour } from "next/font/google";
 import "./globals.css";
 import { LenisProvider } from "@/components/lenis-provider";
+import { ErrorBoundary } from "@/components/error-boundary";
 
 const roboto = Roboto({
   subsets: ["latin"],
@@ -65,7 +66,9 @@ export default function RootLayout({
         className={`${roboto.className} ${sixtyfour.variable}`}
         style={{ backgroundColor: "#0a0a0a" }}
       >
-        <LenisProvider>{children}</LenisProvider>
+        <ErrorBoundary>
+          <LenisProvider>{children}</LenisProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );

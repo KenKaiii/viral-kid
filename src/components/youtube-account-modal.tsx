@@ -258,8 +258,8 @@ export function YouTubeAccountModal({
             });
           }
         })
-        .catch(() => {
-          // Database not available - use defaults
+        .catch((err) => {
+          console.error("Failed to fetch YouTube credentials:", err);
         })
         .finally(() => setIsLoading(false));
     }
@@ -270,23 +270,33 @@ export function YouTubeAccountModal({
     if (isOpen && accountId) {
       // Fetch OpenRouter credentials
       fetch(`/api/openrouter/credentials?accountId=${accountId}`)
-        .then((res) => res.json())
+        .then((res) => {
+          if (!res.ok) throw new Error("Failed to fetch");
+          return res.json();
+        })
         .then((data) => {
-          if (data.apiKey) {
+          if (data.hasApiKey) {
             setOpenRouterApiKey(data.apiKey);
           }
         })
-        .catch(() => {});
+        .catch((err) => {
+          console.error("Failed to fetch OpenRouter credentials:", err);
+        });
 
       // Fetch cached models
       fetch("/api/openrouter/models")
-        .then((res) => res.json())
+        .then((res) => {
+          if (!res.ok) throw new Error("Failed to fetch");
+          return res.json();
+        })
         .then((data) => {
           if (Array.isArray(data)) {
             setOpenRouterModels(data);
           }
         })
-        .catch(() => {});
+        .catch((err) => {
+          console.error("Failed to fetch OpenRouter models:", err);
+        });
     }
   }, [isOpen, accountId]);
 
