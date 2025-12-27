@@ -6,8 +6,6 @@
   },
   "deploy": {
     "startCommand": "npx prisma db push && npm run start",
-    "healthcheckPath": "/",
-    "healthcheckTimeout": 120,
     "restartPolicyType": "on_failure",
     "restartPolicyMaxRetries": 10
   },
