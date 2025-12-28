@@ -236,7 +236,7 @@ function StyleCheckbox({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 5 }}
               transition={{ duration: 0.15 }}
-              className="absolute bottom-full left-1/2 z-50 mb-2 w-48 -translate-x-1/2 rounded-lg border px-3 py-2 text-xs"
+              className="absolute bottom-full left-1/2 z-[70] mb-2 w-48 -translate-x-1/2 rounded-lg border px-3 py-2 text-xs"
               style={{
                 background: "rgba(20,20,20,0.98)",
                 borderColor: "rgba(255,255,255,0.15)",
@@ -410,7 +410,7 @@ export function SystemPromptModal({
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
           {/* Backdrop */}
           <motion.div
-            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            className="absolute inset-0 z-0 bg-black/80 backdrop-blur-sm"
             variants={backdropVariants}
             initial="hidden"
             animate="visible"
