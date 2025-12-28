@@ -30,20 +30,20 @@ async function main() {
     );
 
     if (existing.rows.length > 0) {
-      // Update password
+      // Update password and ensure admin role
       await pool.query(
-        'UPDATE "User" SET "passwordHash" = $1 WHERE email = $2',
-        [passwordHash, email]
+        'UPDATE "User" SET "passwordHash" = $1, "role" = $2 WHERE email = $3',
+        [passwordHash, "ADMIN", email]
       );
-      console.log("User password updated:", email);
+      console.log("User password updated and set as ADMIN:", email);
     } else {
-      // Create user
+      // Create admin user
       const id = `user_${Date.now()}`;
       await pool.query(
-        'INSERT INTO "User" (id, email, "passwordHash", "createdAt", "updatedAt") VALUES ($1, $2, $3, NOW(), NOW())',
-        [id, email, passwordHash]
+        'INSERT INTO "User" (id, email, "passwordHash", "role", "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, NOW(), NOW())',
+        [id, email, passwordHash, "ADMIN"]
       );
-      console.log("User created:", email);
+      console.log("Admin user created:", email);
     }
   } catch (error) {
     console.error("Error:", error);

@@ -13,18 +13,43 @@ datasource db {
   provider = "postgresql"
 }
 
+// User roles for access control
+enum Role {
+  ADMIN
+  USER
+}
+
 // User model for app authentication
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
   passwordHash String
+  role         Role     @default(USER)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   // Relations
   accounts Account[]
   sessions Session[]
+  invitesSent Invite[] @relation("InviteSender")
 
+  @@index([email])
+}
+
+// Invite model for invite-only registration
+model Invite {
+  id          String    @id @default(cuid())
+  email       String    @unique
+  token       String    @unique
+  expiresAt   DateTime
+  usedAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  // Who sent the invite
+  invitedById String
+  invitedBy   User      @relation("InviteSender", fields: [invitedById], references: [id], onDelete: Cascade)
+
+  @@index([token])
   @@index([email])
 }
 
