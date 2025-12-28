@@ -5,7 +5,7 @@
     "dockerfilePath": "Dockerfile"
   },
   "deploy": {
-    "startCommand": "npx prisma db push && npm run start",
+    "startCommand": "npx prisma db push && echo 'Starting Next.js...' && node -e \"console.log('Node works, PORT=' + process.env.PORT)\" && npm run start",
     "restartPolicyType": "on_failure",
     "restartPolicyMaxRetries": 10
   },
