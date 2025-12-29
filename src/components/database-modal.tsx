@@ -222,17 +222,15 @@ export function DatabaseModal({
             className="relative z-10 flex w-full max-w-4xl flex-col rounded-2xl border"
             style={{
               background:
-                "linear-gradient(to bottom, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%)",
+                "linear-gradient(to bottom, rgba(30,30,35,0.98) 0%, rgba(20,20,25,0.99) 100%)",
               borderColor: "rgba(255,255,255,0.1)",
               boxShadow:
                 "0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1), inset 0 -1px 0 rgba(0,0,0,0.2)",
               maxHeight: "80vh",
-              backdropFilter: "blur(24px)",
-              WebkitBackdropFilter: "blur(24px)",
             }}
-            initial={{ scale: 0.95, y: 20 }}
-            animate={{ scale: 1, y: 0 }}
-            exit={{ scale: 0.95, y: 20 }}
+            initial={{ scale: 0.95, y: 20, opacity: 0 }}
+            animate={{ scale: 1, y: 0, opacity: 1 }}
+            exit={{ scale: 0.95, y: 20, opacity: 0 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
           >
             {/* Header */}

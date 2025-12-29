@@ -93,23 +93,26 @@ interface AddAccountCardProps {
 }
 
 const cardVariants = {
-  hidden: { opacity: 0, scale: 0.95, y: 20 },
+  hidden: { opacity: 0, scale: 0.9, y: 30 },
   visible: {
     opacity: 1,
     scale: 1,
     y: 0,
     transition: {
       type: "spring" as const,
-      stiffness: 300,
-      damping: 30,
+      stiffness: 200,
+      damping: 25,
+      mass: 0.8,
     },
   },
   exit: {
     opacity: 0,
-    scale: 0.95,
-    y: -20,
+    scale: 0.9,
+    y: 20,
     transition: {
-      duration: 0.2,
+      type: "tween" as const,
+      duration: 0.25,
+      ease: [0.4, 0, 0.2, 1] as [number, number, number, number],
     },
   },
 };
@@ -173,6 +176,11 @@ function PlatformCard({
       );
     }
 
+    // Reddit-specific requirements
+    if (account.platform === "reddit") {
+      items.push({ label: "Keywords", done: account.setup.searchTerm });
+    }
+
     items.push(
       { label: "OpenRouter", done: account.setup.openRouter },
       { label: "LLM Model", done: account.setup.llmModel }
@@ -189,20 +197,31 @@ function PlatformCard({
 
   return (
     <motion.div
-      className="group relative flex w-72 cursor-pointer flex-col overflow-hidden rounded-2xl border backdrop-blur-xl"
+      className="group relative flex w-72 cursor-pointer flex-col overflow-hidden rounded-2xl border"
       style={{
-        background:
-          "linear-gradient(to bottom, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%)",
-        borderColor: "rgba(255,255,255,0.1)",
-        boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
+        borderColor: "rgba(255,255,255,0.15)",
+        boxShadow:
+          "0 4px 20px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1), inset 0 -1px 0 rgba(0,0,0,0.2)",
       }}
       variants={cardVariants}
       initial="hidden"
       animate="visible"
       exit="exit"
-      whileHover={{ borderColor: "rgba(255,255,255,0.4)" }}
+      whileHover={{
+        borderColor: "rgba(255,255,255,0.3)",
+        boxShadow:
+          "0 8px 30px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.15), inset 0 -1px 0 rgba(0,0,0,0.2)",
+      }}
       transition={{ duration: 0.2 }}
     >
+      {/* Glass background - static layer */}
+      <div
+        className="absolute inset-0 backdrop-blur-xl"
+        style={{
+          background:
+            "linear-gradient(to bottom, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.02) 100%)",
+        }}
+      />
       {/* Label */}
       <div className="relative z-10 flex items-center justify-between px-5 pt-4">
         <h3 className="text-sm font-semibold capitalize tracking-wide text-white/90">
@@ -256,11 +275,11 @@ function PlatformCard({
         <AnimatePresence initial={false}>
           {isSetupExpanded && (
             <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.2, ease: "easeInOut" }}
-              className="overflow-hidden"
+              initial={{ opacity: 0, scaleY: 0 }}
+              animate={{ opacity: 1, scaleY: 1 }}
+              exit={{ opacity: 0, scaleY: 0 }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
+              className="origin-top overflow-hidden"
             >
               <div className="space-y-1 px-3 pb-2 pt-1 border-t border-white/5">
                 {setupItems.map((item, index) => (
@@ -405,23 +424,32 @@ function AddAccountCard({ platform, onClick }: AddAccountCardProps) {
     <motion.button
       type="button"
       onClick={onClick}
-      className="group relative flex h-48 w-72 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-2xl border backdrop-blur-xl"
+      className="group relative flex h-48 w-72 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-2xl border"
       style={{
-        background:
-          "linear-gradient(to bottom, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)",
         borderColor: "rgba(255,255,255,0.1)",
         borderStyle: "dashed",
-        boxShadow: "0 4px 20px rgba(0,0,0,0.2)",
+        boxShadow:
+          "0 4px 20px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05), inset 0 -1px 0 rgba(0,0,0,0.1)",
       }}
       whileHover={{
-        borderColor: "rgba(255,255,255,0.4)",
+        borderColor: "rgba(255,255,255,0.3)",
+        boxShadow:
+          "0 8px 30px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1), inset 0 -1px 0 rgba(0,0,0,0.1)",
       }}
       whileTap={{ scale: 0.98 }}
       transition={{ duration: 0.2 }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="flex items-center gap-2">
+      {/* Glass background - static layer */}
+      <div
+        className="absolute inset-0 backdrop-blur-xl"
+        style={{
+          background:
+            "linear-gradient(to bottom, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.01) 100%)",
+        }}
+      />
+      <div className="relative z-10 flex items-center gap-2">
         <motion.div
           className={isHovered ? iconColorHover : iconColor}
           animate={{ color: isHovered ? undefined : undefined }}
@@ -440,7 +468,7 @@ function AddAccountCard({ platform, onClick }: AddAccountCardProps) {
         </motion.div>
       </div>
       <motion.span
-        className="mt-3 text-sm font-semibold tracking-wide"
+        className="relative z-10 mt-3 text-sm font-semibold tracking-wide"
         animate={{
           color: isHovered ? "rgba(255,255,255,0.8)" : "rgba(255,255,255,0.4)",
         }}

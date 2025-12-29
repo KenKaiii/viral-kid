@@ -31,7 +31,7 @@ export function CredentialInput({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full rounded-lg border px-4 py-3 text-white/90 outline-none backdrop-blur-xl transition-all duration-200"
+        className="w-full rounded-lg border px-4 py-3 text-white/90 outline-none transition-colors duration-200"
         style={{
           background: "var(--bg-input)",
           borderColor: "var(--border-light)",

@@ -15,7 +15,7 @@ import {
   FileText,
 } from "lucide-react";
 import { SystemPromptModal } from "./system-prompt-modal";
-import { dropdownVariants } from "@/lib/animations";
+import { dropdownVariants, backdropVariants } from "@/lib/animations";
 import { ModalButton } from "@/components/ui/modal-button";
 import { IconButton } from "@/components/ui/icon-button";
 import { CredentialInput } from "@/components/ui/credential-input";
@@ -325,8 +325,12 @@ export function AccountModal({
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           {/* Backdrop */}
-          <div
+          <motion.div
             className="absolute inset-0 z-0 bg-black/80 backdrop-blur-sm"
+            variants={backdropVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
             onClick={onClose}
           />
 
@@ -335,16 +339,14 @@ export function AccountModal({
             className="relative z-10 w-full max-w-5xl rounded-2xl border"
             style={{
               background:
-                "linear-gradient(to bottom, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%)",
+                "linear-gradient(to bottom, rgba(30,30,35,0.98) 0%, rgba(20,20,25,0.99) 100%)",
               borderColor: "rgba(255,255,255,0.1)",
               boxShadow:
                 "0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1), inset 0 -1px 0 rgba(0,0,0,0.2)",
-              backdropFilter: "blur(24px)",
-              WebkitBackdropFilter: "blur(24px)",
             }}
-            initial={{ scale: 0.95, y: 20 }}
-            animate={{ scale: 1, y: 0 }}
-            exit={{ scale: 0.95, y: 20 }}
+            initial={{ scale: 0.95, y: 20, opacity: 0 }}
+            animate={{ scale: 1, y: 0, opacity: 1 }}
+            exit={{ scale: 0.95, y: 20, opacity: 0 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
           >
             {/* Header */}

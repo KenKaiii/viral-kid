@@ -15,7 +15,15 @@ import {
   FileText,
 } from "lucide-react";
 import { SystemPromptModal } from "./system-prompt-modal";
-import { iconButtonHoverState, buttonHoverState } from "@/lib/animations";
+import {
+  backdropVariants,
+  dropdownVariants,
+  fadeInVariants,
+  connectionStatusVariants,
+} from "@/lib/animations";
+import { ModalButton } from "@/components/ui/modal-button";
+import { IconButton } from "@/components/ui/icon-button";
+import { CredentialInput } from "@/components/ui/credential-input";
 
 interface RedditAccountModalProps {
   isOpen: boolean;
@@ -54,126 +62,6 @@ function formatModelPrice(pricing?: string | null): string {
 
 function formatModelName(name: string): string {
   return name.replace(/^[^:]+:\s*/, "");
-}
-
-function ModalButton({
-  children,
-  onClick,
-  disabled,
-  variant = "secondary",
-  className = "",
-}: {
-  children: React.ReactNode;
-  onClick?: () => void;
-  disabled?: boolean;
-  variant?: "primary" | "secondary";
-  className?: string;
-}) {
-  const isPrimary = variant === "primary";
-
-  return (
-    <motion.button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className={`relative flex items-center justify-center gap-2 rounded-lg px-4 py-3 font-medium ${className}`}
-      style={{
-        color: disabled
-          ? "rgba(255,255,255,0.3)"
-          : isPrimary
-            ? "rgba(255,255,255,0.9)"
-            : "rgba(255,255,255,0.5)",
-        backgroundColor: disabled
-          ? "rgba(255,255,255,0.02)"
-          : isPrimary
-            ? "rgba(255,255,255,0.1)"
-            : "rgba(255,255,255,0.05)",
-        cursor: disabled ? "not-allowed" : "pointer",
-      }}
-      whileHover={disabled ? {} : buttonHoverState}
-      whileTap={disabled ? {} : { scale: 0.98 }}
-      transition={{ duration: 0.15 }}
-    >
-      {children}
-    </motion.button>
-  );
-}
-
-function IconButton({
-  icon,
-  onClick,
-  label,
-}: {
-  icon: React.ReactNode;
-  onClick?: () => void;
-  label: string;
-}) {
-  return (
-    <motion.button
-      type="button"
-      onClick={onClick}
-      className="relative rounded-lg p-2"
-      style={{
-        color: "rgba(255,255,255,0.5)",
-        backgroundColor: "rgba(255,255,255,0)",
-      }}
-      whileHover={iconButtonHoverState}
-      whileTap={{ scale: 0.95 }}
-      transition={{ duration: 0.15 }}
-      title={label}
-      aria-label={label}
-    >
-      {icon}
-    </motion.button>
-  );
-}
-
-function CredentialInput({
-  id,
-  label,
-  value,
-  onChange,
-  placeholder,
-  type = "text",
-}: {
-  id: string;
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  placeholder: string;
-  type?: "text" | "password";
-}) {
-  return (
-    <div className="mb-4">
-      <label
-        htmlFor={id}
-        className="mb-2 block text-sm font-semibold tracking-wide text-white/90"
-      >
-        {label}
-      </label>
-      <input
-        id={id}
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="w-full rounded-lg border px-4 py-3 text-white/90 outline-none backdrop-blur-xl"
-        style={{
-          background: "rgba(255,255,255,0.05)",
-          borderColor: "rgba(255,255,255,0.1)",
-          transition: "border-color 0.3s ease, background 0.3s ease",
-        }}
-        onFocus={(e) => {
-          e.target.style.borderColor = "rgba(255,255,255,0.3)";
-          e.target.style.background = "rgba(255,255,255,0.08)";
-        }}
-        onBlur={(e) => {
-          e.target.style.borderColor = "rgba(255,255,255,0.1)";
-          e.target.style.background = "rgba(255,255,255,0.05)";
-        }}
-      />
-    </div>
-  );
 }
 
 export function RedditAccountModal({
@@ -426,8 +314,12 @@ export function RedditAccountModal({
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           {/* Backdrop */}
-          <div
+          <motion.div
             className="absolute inset-0 z-0 bg-black/80 backdrop-blur-sm"
+            variants={backdropVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
             onClick={onClose}
           />
 
@@ -436,16 +328,14 @@ export function RedditAccountModal({
             className="relative z-10 w-full max-w-4xl rounded-2xl border"
             style={{
               background:
-                "linear-gradient(to bottom, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%)",
+                "linear-gradient(to bottom, rgba(30,30,35,0.98) 0%, rgba(20,20,25,0.99) 100%)",
               borderColor: "rgba(255,255,255,0.1)",
               boxShadow:
                 "0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1), inset 0 -1px 0 rgba(0,0,0,0.2)",
-              backdropFilter: "blur(24px)",
-              WebkitBackdropFilter: "blur(24px)",
             }}
-            initial={{ scale: 0.95, y: 20 }}
-            animate={{ scale: 1, y: 0 }}
-            exit={{ scale: 0.95, y: 20 }}
+            initial={{ scale: 0.95, y: 20, opacity: 0 }}
+            animate={{ scale: 1, y: 0, opacity: 1 }}
+            exit={{ scale: 0.95, y: 20, opacity: 0 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
           >
             {/* Header */}
@@ -469,29 +359,31 @@ export function RedditAccountModal({
 
             {/* Content */}
             <div className="p-6">
-              {/* Loading overlay with fade */}
-              <div
-                className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center rounded-2xl"
-                style={{
-                  opacity: isLoading ? 1 : 0,
-                  transition: "opacity 0.2s ease-out",
-                  background: "rgba(0,0,0,0.3)",
-                }}
-              >
-                <Loader2 className="h-6 w-6 animate-spin text-white/70" />
-              </div>
+              {/* Loading overlay */}
+              <AnimatePresence>
+                {isLoading && (
+                  <motion.div
+                    variants={fadeInVariants}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                    className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center rounded-2xl"
+                    style={{ backgroundColor: "rgba(0,0,0,0.3)" }}
+                  >
+                    <Loader2 className="h-6 w-6 animate-spin text-white/70" />
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
-              {/* Content with fade */}
-              <div
-                style={{
-                  opacity: isLoading ? 0.3 : 1,
-                  transition: "opacity 0.2s ease-out",
-                }}
-              >
-                <>
-                  {/* Connection Status */}
+              <div>
+                {/* Connection Status */}
+                <AnimatePresence>
                   {credentials.isConnected && (
-                    <div
+                    <motion.div
+                      variants={connectionStatusVariants}
+                      initial="hidden"
+                      animate="visible"
+                      exit="exit"
                       className="mb-6 rounded-lg border px-4 py-3"
                       style={{
                         background: "rgba(34,197,94,0.1)",
@@ -505,11 +397,11 @@ export function RedditAccountModal({
                             Connected as u/{credentials.redditUsername}
                           </span>
                         </div>
-                        <button
+                        <motion.button
                           type="button"
                           onClick={handleDisconnect}
                           disabled={isDisconnecting}
-                          className="rounded-md px-3 py-1 text-xs font-medium transition-colors"
+                          className="rounded-md px-3 py-1 text-xs font-medium"
                           style={{
                             color: isDisconnecting
                               ? "rgba(255,255,255,0.3)"
@@ -517,16 +409,13 @@ export function RedditAccountModal({
                             backgroundColor: "rgba(239,68,68,0.1)",
                             cursor: isDisconnecting ? "not-allowed" : "pointer",
                           }}
-                          onMouseEnter={(e) => {
-                            if (!isDisconnecting) {
-                              e.currentTarget.style.backgroundColor =
-                                "rgba(239,68,68,0.2)";
-                            }
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor =
-                              "rgba(239,68,68,0.1)";
-                          }}
+                          whileHover={
+                            isDisconnecting
+                              ? {}
+                              : { backgroundColor: "rgba(239,68,68,0.2)" }
+                          }
+                          whileTap={isDisconnecting ? {} : { scale: 0.95 }}
+                          transition={{ duration: 0.15 }}
                         >
                           {isDisconnecting ? (
                             <span className="flex items-center gap-1">
@@ -536,214 +425,233 @@ export function RedditAccountModal({
                           ) : (
                             "Disconnect"
                           )}
-                        </button>
+                        </motion.button>
                       </div>
-                    </div>
+                    </motion.div>
                   )}
+                </AnimatePresence>
 
-                  {/* Requirements Info */}
-                  <div
-                    className="mb-6 rounded-lg border px-4 py-3"
-                    style={{
-                      background: "rgba(255,69,0,0.1)",
-                      borderColor: "rgba(255,69,0,0.3)",
-                    }}
-                  >
-                    <p className="text-sm text-white/80">
-                      <strong>Setup:</strong> Create a Reddit app at
-                      reddit.com/prefs/apps. Select &quot;script&quot; or
-                      &quot;web app&quot; type and add the redirect URI below.
+                {/* Requirements Info */}
+                <div
+                  className="mb-6 rounded-lg border px-4 py-3"
+                  style={{
+                    background: "rgba(255,69,0,0.1)",
+                    borderColor: "rgba(255,69,0,0.3)",
+                  }}
+                >
+                  <p className="text-sm text-white/80">
+                    <strong>Setup:</strong> Create a Reddit app at
+                    reddit.com/prefs/apps. Select &quot;script&quot; or
+                    &quot;web app&quot; type and add the redirect URI below.
+                  </p>
+                </div>
+
+                {/* Two Column Layout */}
+                <div className="mb-6 flex gap-6">
+                  {/* Left Column - Reddit App Credentials */}
+                  <div className="flex-1">
+                    <h3 className="mb-4 text-sm font-semibold tracking-wide text-white/90">
+                      Reddit App Credentials
+                    </h3>
+                    <p className="mb-4 text-xs text-white/50">
+                      Create a Reddit app at reddit.com/prefs/apps to get your
+                      credentials.
                     </p>
-                  </div>
 
-                  {/* Two Column Layout */}
-                  <div className="mb-6 flex gap-6">
-                    {/* Left Column - Reddit App Credentials */}
-                    <div className="flex-1">
-                      <h3 className="mb-4 text-sm font-semibold tracking-wide text-white/90">
-                        Reddit App Credentials
-                      </h3>
-                      <p className="mb-4 text-xs text-white/50">
-                        Create a Reddit app at reddit.com/prefs/apps to get your
-                        credentials.
+                    {/* Callback URL */}
+                    <div className="mb-4">
+                      <label className="mb-2 block text-sm font-semibold tracking-wide text-white/70">
+                        Redirect URI
+                      </label>
+                      <p className="mb-2 text-xs text-white/50">
+                        Add this as the redirect URI in your Reddit app settings
                       </p>
-
-                      {/* Callback URL */}
-                      <div className="mb-4">
-                        <label className="mb-2 block text-sm font-semibold tracking-wide text-white/70">
-                          Redirect URI
-                        </label>
-                        <p className="mb-2 text-xs text-white/50">
-                          Add this as the redirect URI in your Reddit app
-                          settings
-                        </p>
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="flex-1 overflow-hidden rounded-lg border px-4 py-3"
-                            style={{
-                              background: "rgba(255,255,255,0.03)",
-                              borderColor: "rgba(255,255,255,0.1)",
-                            }}
-                          >
-                            <code className="block truncate text-sm text-white/70">
-                              {callbackUrl}
-                            </code>
-                          </div>
-                          <IconButton
-                            icon={
-                              copied ? (
-                                <Check className="h-4 w-4 text-green-500" />
-                              ) : (
-                                <Copy className="h-4 w-4" />
-                              )
-                            }
-                            onClick={handleCopyCallback}
-                            label="Copy redirect URI"
-                          />
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="flex-1 overflow-hidden rounded-lg border px-4 py-3"
+                          style={{
+                            background: "rgba(255,255,255,0.03)",
+                            borderColor: "rgba(255,255,255,0.1)",
+                          }}
+                        >
+                          <code className="block truncate text-sm text-white/70">
+                            {callbackUrl}
+                          </code>
                         </div>
+                        <IconButton
+                          icon={
+                            copied ? (
+                              <Check className="h-4 w-4 text-green-500" />
+                            ) : (
+                              <Copy className="h-4 w-4" />
+                            )
+                          }
+                          onClick={handleCopyCallback}
+                          label="Copy redirect URI"
+                        />
                       </div>
-
-                      <CredentialInput
-                        id="clientId"
-                        label="Client ID"
-                        value={credentials.clientId}
-                        onChange={updateCredential("clientId")}
-                        placeholder="Enter Reddit Client ID..."
-                      />
-
-                      <CredentialInput
-                        id="clientSecret"
-                        label="Client Secret"
-                        value={credentials.clientSecret}
-                        onChange={updateCredential("clientSecret")}
-                        placeholder="Enter Client Secret..."
-                        type="password"
-                      />
-
-                      <a
-                        href="https://www.reddit.com/prefs/apps"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mt-2 inline-flex items-center gap-2 text-sm text-orange-400 hover:text-orange-300"
-                        style={{ transition: "color 0.3s ease" }}
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                        Open Reddit App Preferences
-                      </a>
                     </div>
 
-                    {/* Divider */}
-                    <div
-                      className="w-px self-stretch"
-                      style={{ background: "rgba(255,255,255,0.1)" }}
+                    <CredentialInput
+                      id="clientId"
+                      label="Client ID"
+                      value={credentials.clientId}
+                      onChange={updateCredential("clientId")}
+                      placeholder="Enter Reddit Client ID..."
                     />
 
-                    {/* Right Column - OpenRouter */}
-                    <div className="flex-1">
-                      <h3 className="mb-4 text-sm font-semibold tracking-wide text-white/90">
-                        OpenRouter API
-                      </h3>
-                      <p className="mb-4 text-xs text-white/50">
-                        Connect to OpenRouter for LLM access.
-                      </p>
+                    <CredentialInput
+                      id="clientSecret"
+                      label="Client Secret"
+                      value={credentials.clientSecret}
+                      onChange={updateCredential("clientSecret")}
+                      placeholder="Enter Client Secret..."
+                      type="password"
+                    />
 
-                      <CredentialInput
-                        id="openRouterApiKey"
-                        label="API Key"
-                        value={openRouterApiKey}
-                        onChange={setOpenRouterApiKey}
-                        placeholder="Enter OpenRouter API Key..."
-                        type="password"
-                      />
+                    <a
+                      href="https://www.reddit.com/prefs/apps"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-2 inline-flex items-center gap-2 text-sm text-orange-400 hover:text-orange-300"
+                      style={{ transition: "color 0.3s ease" }}
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                      Open Reddit App Preferences
+                    </a>
+                  </div>
 
-                      {/* LLM Models Section */}
-                      <div className="mt-4">
-                        <div className="mb-2 flex items-center justify-between">
-                          <span className="text-sm font-semibold tracking-wide text-white/90">
-                            LLM Models
-                          </span>
-                          <div className="flex items-center gap-2">
-                            {openRouterModels.length > 0 && (
-                              <span
-                                className="rounded-full px-2 py-0.5 text-xs font-medium text-white/70"
-                                style={{ background: "rgba(255,255,255,0.1)" }}
-                              >
-                                {openRouterModels.length}
-                              </span>
-                            )}
-                            <button
-                              type="button"
-                              onClick={() => handleSyncModels()}
-                              disabled={isSyncingModels || !openRouterApiKey}
-                              className="rounded-lg p-1.5"
-                              style={{
-                                color:
-                                  isSyncingModels || !openRouterApiKey
-                                    ? "rgba(255,255,255,0.3)"
-                                    : "rgba(255,255,255,0.5)",
-                                background: "rgba(255,255,255,0.05)",
-                                cursor:
-                                  isSyncingModels || !openRouterApiKey
-                                    ? "not-allowed"
-                                    : "pointer",
-                              }}
-                              title="Sync models"
+                  {/* Divider */}
+                  <div
+                    className="w-px self-stretch"
+                    style={{ background: "rgba(255,255,255,0.1)" }}
+                  />
+
+                  {/* Right Column - OpenRouter */}
+                  <div className="flex-1">
+                    <h3 className="mb-4 text-sm font-semibold tracking-wide text-white/90">
+                      OpenRouter API
+                    </h3>
+                    <p className="mb-4 text-xs text-white/50">
+                      Connect to OpenRouter for LLM access.
+                    </p>
+
+                    <CredentialInput
+                      id="openRouterApiKey"
+                      label="API Key"
+                      value={openRouterApiKey}
+                      onChange={setOpenRouterApiKey}
+                      placeholder="Enter OpenRouter API Key..."
+                      type="password"
+                    />
+
+                    {/* LLM Models Section */}
+                    <div className="mt-4">
+                      <div className="mb-2 flex items-center justify-between">
+                        <span className="text-sm font-semibold tracking-wide text-white/90">
+                          LLM Models
+                        </span>
+                        <div className="flex items-center gap-2">
+                          {openRouterModels.length > 0 && (
+                            <span
+                              className="rounded-full px-2 py-0.5 text-xs font-medium text-white/70"
+                              style={{ background: "rgba(255,255,255,0.1)" }}
                             >
-                              <RefreshCw
-                                className={`h-3.5 w-3.5 ${isSyncingModels ? "animate-spin" : ""}`}
-                              />
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Searchable Dropdown */}
-                        <div className="relative" ref={modelDropdownRef}>
-                          <button
+                              {openRouterModels.length}
+                            </span>
+                          )}
+                          <motion.button
                             type="button"
-                            onClick={() =>
-                              setIsModelDropdownOpen(!isModelDropdownOpen)
-                            }
-                            disabled={openRouterModels.length === 0}
-                            className="flex w-full items-center justify-between rounded-lg border px-3 py-2.5 text-left"
+                            onClick={() => handleSyncModels()}
+                            disabled={isSyncingModels || !openRouterApiKey}
+                            className="rounded-lg p-1.5"
                             style={{
+                              color:
+                                isSyncingModels || !openRouterApiKey
+                                  ? "rgba(255,255,255,0.3)"
+                                  : "rgba(255,255,255,0.5)",
                               background: "rgba(255,255,255,0.05)",
-                              borderColor: isModelDropdownOpen
-                                ? "rgba(255,255,255,0.3)"
-                                : "rgba(255,255,255,0.1)",
                               cursor:
-                                openRouterModels.length === 0
+                                isSyncingModels || !openRouterApiKey
                                   ? "not-allowed"
                                   : "pointer",
                             }}
+                            whileHover={
+                              isSyncingModels || !openRouterApiKey
+                                ? {}
+                                : { backgroundColor: "rgba(255,255,255,0.1)" }
+                            }
+                            whileTap={
+                              isSyncingModels || !openRouterApiKey
+                                ? {}
+                                : { scale: 0.95 }
+                            }
+                            transition={{ duration: 0.15 }}
+                            title="Sync models"
                           >
-                            <span
-                              className="truncate text-sm"
-                              style={{
-                                color: selectedModel
-                                  ? "rgba(255,255,255,0.9)"
-                                  : "rgba(255,255,255,0.4)",
-                              }}
-                            >
-                              {selectedModel
-                                ? formatModelName(selectedModel.name)
-                                : openRouterModels.length === 0
-                                  ? "Sync models first..."
-                                  : "Select a model..."}
-                            </span>
-                            <ChevronDown
-                              className="h-4 w-4 shrink-0 text-white/50"
-                              style={{
-                                transform: isModelDropdownOpen
-                                  ? "rotate(180deg)"
-                                  : "rotate(0deg)",
-                                transition: "transform 0.2s ease",
-                              }}
+                            <RefreshCw
+                              className={`h-3.5 w-3.5 ${isSyncingModels ? "animate-spin" : ""}`}
                             />
-                          </button>
+                          </motion.button>
+                        </div>
+                      </div>
 
+                      {/* Searchable Dropdown */}
+                      <div className="relative" ref={modelDropdownRef}>
+                        <motion.button
+                          type="button"
+                          onClick={() =>
+                            setIsModelDropdownOpen(!isModelDropdownOpen)
+                          }
+                          disabled={openRouterModels.length === 0}
+                          className="flex w-full items-center justify-between rounded-lg border px-3 py-2.5 text-left"
+                          style={{
+                            background: "rgba(255,255,255,0.05)",
+                            borderColor: isModelDropdownOpen
+                              ? "rgba(255,255,255,0.3)"
+                              : "rgba(255,255,255,0.1)",
+                            cursor:
+                              openRouterModels.length === 0
+                                ? "not-allowed"
+                                : "pointer",
+                          }}
+                          whileHover={
+                            openRouterModels.length === 0
+                              ? {}
+                              : { borderColor: "rgba(255,255,255,0.2)" }
+                          }
+                          transition={{ duration: 0.15 }}
+                        >
+                          <span
+                            className="truncate text-sm"
+                            style={{
+                              color: selectedModel
+                                ? "rgba(255,255,255,0.9)"
+                                : "rgba(255,255,255,0.4)",
+                            }}
+                          >
+                            {selectedModel
+                              ? formatModelName(selectedModel.name)
+                              : openRouterModels.length === 0
+                                ? "Sync models first..."
+                                : "Select a model..."}
+                          </span>
+                          <motion.div
+                            animate={{ rotate: isModelDropdownOpen ? 180 : 0 }}
+                            transition={{ duration: 0.2 }}
+                          >
+                            <ChevronDown className="h-4 w-4 shrink-0 text-white/50" />
+                          </motion.div>
+                        </motion.button>
+
+                        <AnimatePresence>
                           {isModelDropdownOpen &&
                             openRouterModels.length > 0 && (
-                              <div
+                              <motion.div
+                                variants={dropdownVariants}
+                                initial="hidden"
+                                animate="visible"
+                                exit="exit"
                                 className="absolute left-0 right-0 top-full z-30 mt-1 overflow-hidden rounded-lg border"
                                 style={{
                                   background:
@@ -797,8 +705,8 @@ export function RedditAccountModal({
                                           )
                                     )
                                     .slice(0, 100)
-                                    .map((model) => (
-                                      <button
+                                    .map((model, index) => (
+                                      <motion.button
                                         key={model.id}
                                         type="button"
                                         onClick={async () => {
@@ -826,7 +734,7 @@ export function RedditAccountModal({
                                             );
                                           }
                                         }}
-                                        className="w-full px-3 py-2.5 text-left text-sm transition-all duration-150"
+                                        className="w-full px-3 py-2.5 text-left text-sm"
                                         style={{
                                           color:
                                             selectedModel?.id === model.id
@@ -837,21 +745,13 @@ export function RedditAccountModal({
                                               ? "rgba(255,255,255,0.1)"
                                               : "rgba(0,0,0,0)",
                                         }}
-                                        onMouseEnter={(e) => {
-                                          if (selectedModel?.id !== model.id) {
-                                            e.currentTarget.style.backgroundColor =
-                                              "rgba(255,255,255,0.08)";
-                                            e.currentTarget.style.color =
-                                              "rgba(255,255,255,0.9)";
-                                          }
-                                        }}
-                                        onMouseLeave={(e) => {
-                                          if (selectedModel?.id !== model.id) {
-                                            e.currentTarget.style.background =
-                                              "rgba(0,0,0,0)";
-                                            e.currentTarget.style.color =
-                                              "rgba(255,255,255,0.7)";
-                                          }
+                                        initial={{ opacity: 0, x: -10 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ delay: index * 0.01 }}
+                                        whileHover={{
+                                          backgroundColor:
+                                            "rgba(255,255,255,0.08)",
+                                          color: "rgba(255,255,255,0.9)",
                                         }}
                                       >
                                         <div className="truncate">
@@ -865,7 +765,7 @@ export function RedditAccountModal({
                                         >
                                           {formatModelPrice(model.pricing)}
                                         </div>
-                                      </button>
+                                      </motion.button>
                                     ))}
                                   {openRouterModels.filter(
                                     (model) =>
@@ -885,74 +785,80 @@ export function RedditAccountModal({
                                     </p>
                                   )}
                                 </div>
-                              </div>
+                              </motion.div>
                             )}
-                        </div>
+                        </AnimatePresence>
                       </div>
-
-                      {/* System Prompt Button */}
-                      <button
-                        type="button"
-                        onClick={() => setIsSystemPromptModalOpen(true)}
-                        className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition-colors hover:bg-white/10"
-                        style={{
-                          borderColor: "rgba(255,255,255,0.1)",
-                          color: "rgba(255,255,255,0.7)",
-                        }}
-                      >
-                        <FileText className="h-4 w-4" />
-                        System Prompt
-                      </button>
                     </div>
-                  </div>
 
-                  {/* Action Buttons */}
-                  <div className="flex gap-3 border-t border-white/10 pt-6">
-                    <ModalButton
-                      onClick={onClose}
-                      variant="secondary"
-                      className="flex-1"
+                    {/* System Prompt Button */}
+                    <motion.button
+                      type="button"
+                      onClick={() => setIsSystemPromptModalOpen(true)}
+                      className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium"
+                      style={{
+                        borderColor: "rgba(255,255,255,0.1)",
+                        color: "rgba(255,255,255,0.7)",
+                      }}
+                      whileHover={{
+                        backgroundColor: "rgba(255,255,255,0.1)",
+                        borderColor: "rgba(255,255,255,0.2)",
+                      }}
+                      whileTap={{ scale: 0.98 }}
+                      transition={{ duration: 0.15 }}
                     >
-                      Cancel
-                    </ModalButton>
-                    <ModalButton
-                      onClick={handleSave}
-                      disabled={isSaving}
-                      variant="primary"
-                      className="flex-1"
-                    >
-                      {isSaving ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          Saving...
-                        </>
-                      ) : (
-                        "Save Credentials"
-                      )}
-                    </ModalButton>
-                    <ModalButton
-                      onClick={handleConnect}
-                      disabled={
-                        isConnecting ||
-                        !credentials.clientId ||
-                        !credentials.clientSecret
-                      }
-                      variant="primary"
-                      className="flex-1"
-                    >
-                      {isConnecting ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          Connecting...
-                        </>
-                      ) : credentials.isConnected ? (
-                        "Reconnect"
-                      ) : (
-                        "Connect Account"
-                      )}
-                    </ModalButton>
+                      <FileText className="h-4 w-4" />
+                      System Prompt
+                    </motion.button>
                   </div>
-                </>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-3 border-t border-white/10 pt-6">
+                  <ModalButton
+                    onClick={onClose}
+                    variant="secondary"
+                    className="flex-1"
+                  >
+                    Cancel
+                  </ModalButton>
+                  <ModalButton
+                    onClick={handleSave}
+                    disabled={isSaving}
+                    variant="primary"
+                    className="flex-1"
+                  >
+                    {isSaving ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      "Save Credentials"
+                    )}
+                  </ModalButton>
+                  <ModalButton
+                    onClick={handleConnect}
+                    disabled={
+                      isConnecting ||
+                      !credentials.clientId ||
+                      !credentials.clientSecret
+                    }
+                    variant="primary"
+                    className="flex-1"
+                  >
+                    {isConnecting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Connecting...
+                      </>
+                    ) : credentials.isConnected ? (
+                      "Reconnect"
+                    ) : (
+                      "Connect Account"
+                    )}
+                  </ModalButton>
+                </div>
               </div>
             </div>
           </motion.div>
