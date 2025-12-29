@@ -325,11 +325,7 @@ export function SettingsModal({
                 )}
               </AnimatePresence>
 
-              <motion.div
-                initial={{ opacity: 1 }}
-                animate={{ opacity: isLoading ? 0.3 : 1 }}
-                transition={{ duration: 0.2 }}
-              >
+              <div>
                 {/* Search Term Input - Twitter only */}
                 {platform === "twitter" && (
                   <div className="mb-5">
@@ -670,7 +666,7 @@ export function SettingsModal({
                     )}
                   </ModalButton>
                 </div>
-              </motion.div>
+              </div>
             </div>
           </motion.div>
         </div>

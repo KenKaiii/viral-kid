@@ -469,11 +469,7 @@ export function SystemPromptModal({
                 )}
               </AnimatePresence>
 
-              <motion.div
-                initial={{ opacity: 1 }}
-                animate={{ opacity: isLoading ? 0.3 : 1 }}
-                transition={{ duration: 0.2 }}
-              >
+              <div>
                 {/* Two Column Layout */}
                 <div className="flex gap-6">
                   {/* Left Column - System Prompt */}
@@ -799,7 +795,7 @@ You are a helpful social media assistant. Your role is to engage with users in a
                     )}
                   </ModalButton>
                 </div>
-              </motion.div>
+              </div>
             </div>
           </motion.div>
         </div>

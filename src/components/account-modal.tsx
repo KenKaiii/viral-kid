@@ -504,11 +504,7 @@ export function AccountModal({
                 )}
               </AnimatePresence>
 
-              <motion.div
-                initial={{ opacity: 1 }}
-                animate={{ opacity: isLoading ? 0.3 : 1 }}
-                transition={{ duration: 0.2 }}
-              >
+              <div>
                 {/* Connection Status */}
                 <AnimatePresence>
                   {credentials.isConnected && (
@@ -1008,7 +1004,7 @@ export function AccountModal({
                     )}
                   </ModalButton>
                 </div>
-              </motion.div>
+              </div>
             </div>
           </motion.div>
 
