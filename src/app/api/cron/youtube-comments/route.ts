@@ -39,9 +39,6 @@ export async function GET(request: Request): Promise<NextResponse> {
     const accountsToProcess = enabledConfigs.filter((config) => {
       const credentials = config.account.youtubeCredentials;
       if (!credentials?.accessToken || !credentials?.channelId) {
-        console.log(
-          `Skipping account ${config.accountId}: Missing credentials`
-        );
         results.push({
           accountId: config.accountId,
           success: false,
@@ -51,9 +48,6 @@ export async function GET(request: Request): Promise<NextResponse> {
       }
 
       if (!checkSchedule(config.schedule)) {
-        console.log(
-          `Skipping account ${config.accountId}: Schedule not due (${config.schedule})`
-        );
         return false;
       }
 

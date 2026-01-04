@@ -13,8 +13,6 @@ import {
 async function processFetchTwitterTrends(
   data: FetchTwitterTrendsData
 ): Promise<JobResult> {
-  console.log(`Fetching Twitter trends for region: ${data.region || "global"}`);
-
   // TODO: Implement actual Twitter trends fetching logic
   // Example: const twitter = getTwitterClient();
   // const trends = await twitter.getTrends(data.region);
@@ -29,10 +27,6 @@ async function processFetchTwitterTrends(
 async function processFetchYouTubeTrends(
   data: FetchYouTubeTrendsData
 ): Promise<JobResult> {
-  console.log(
-    `Fetching YouTube trends for region: ${data.region || "global"}, category: ${data.categoryId || "all"}`
-  );
-
   // TODO: Implement actual YouTube trends fetching logic
   // Example: const youtube = getYouTubeClient();
   // const trends = await youtube.getTrendingVideos(data);
@@ -47,8 +41,6 @@ async function processFetchYouTubeTrends(
 async function processAnalyzeViralContent(
   data: AnalyzeViralContentData
 ): Promise<JobResult> {
-  console.log(`Analyzing viral content: ${data.contentId} on ${data.platform}`);
-
   // TODO: Implement content analysis logic
   // This could include sentiment analysis, engagement metrics, etc.
 
@@ -61,8 +53,6 @@ async function processAnalyzeViralContent(
 async function processCleanupOldData(
   data: CleanupOldDataData
 ): Promise<JobResult> {
-  console.log(`Cleaning up data older than ${data.olderThanDays} days`);
-
   // TODO: Implement cleanup logic
   // Example:
   // const cutoffDate = new Date();
@@ -77,8 +67,6 @@ async function processCleanupOldData(
 
 // Main job processor - routes jobs to appropriate handler
 export async function processJob(job: Job): Promise<JobResult> {
-  console.log(`Processing job ${job.id}: ${job.name}`);
-
   switch (job.name) {
     case JobNames.FETCH_TWITTER_TRENDS:
       return processFetchTwitterTrends(job.data as FetchTwitterTrendsData);
