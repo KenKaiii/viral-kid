@@ -21,13 +21,18 @@ export async function GET(request: Request): Promise<NextResponse> {
 
   // Allow testing without CRON_SECRET in development, require it in production
   const authHeader = request.headers.get("authorization");
-  const isAuthorized =
-    authHeader === `Bearer ${process.env.CRON_SECRET}` ||
-    process.env.NODE_ENV === "development" ||
-    !process.env.CRON_SECRET;
 
-  if (!isAuthorized) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (process.env.NODE_ENV !== "development") {
+    if (!process.env.CRON_SECRET) {
+      console.error("CRON_SECRET is not configured");
+      return NextResponse.json(
+        { error: "Server misconfiguration" },
+        { status: 500 }
+      );
+    }
+    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
   }
 
   const accountCount = parseInt(searchParams.get("accounts") || "15", 10);

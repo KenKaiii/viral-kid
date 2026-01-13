@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { getBaseUrl } from "@/lib/utils";
 
 interface OpenRouterMessage {
   role: "system" | "user" | "assistant";
@@ -123,8 +124,7 @@ export async function POST(request: Request) {
         headers: {
           Authorization: `Bearer ${credentials.apiKey}`,
           "Content-Type": "application/json",
-          "HTTP-Referer":
-            process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+          "HTTP-Referer": getBaseUrl(request),
           "X-Title": "Viral Kid",
         },
         body: JSON.stringify({

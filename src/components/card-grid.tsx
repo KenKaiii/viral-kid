@@ -64,12 +64,16 @@ interface SetupStatus {
   llmModel: boolean;
 }
 
+type TokenStatus = "healthy" | "expiring_soon" | "expired" | "not_connected";
+
 interface Account {
   id: string;
   platform: "twitter" | "youtube" | "instagram" | "reddit";
   name: string;
   displayName: string;
   isConnected: boolean;
+  tokenStatus: TokenStatus;
+  tokenExpiresAt: string | null;
   setup: SetupStatus;
   isReady: boolean;
   isAutomationEnabled: boolean;
@@ -119,6 +123,56 @@ const cardVariants = {
   },
 };
 
+function getDaysUntilExpiration(expiresAt: string | null): number | null {
+  if (!expiresAt) return null;
+  const now = new Date();
+  const expiration = new Date(expiresAt);
+  const diffMs = expiration.getTime() - now.getTime();
+  return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+}
+
+function TokenStatusBadge({ account }: { account: Account }) {
+  const daysLeft = getDaysUntilExpiration(account.tokenExpiresAt);
+
+  if (account.tokenStatus === "expired") {
+    return (
+      <motion.span
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        className="rounded-full bg-red-500/20 px-2 py-0.5 text-xs text-red-400"
+      >
+        Token Expired
+      </motion.span>
+    );
+  }
+
+  if (account.tokenStatus === "expiring_soon" && daysLeft !== null) {
+    return (
+      <motion.span
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        className="rounded-full bg-amber-500/20 px-2 py-0.5 text-xs text-amber-400"
+      >
+        Expires in {daysLeft}d
+      </motion.span>
+    );
+  }
+
+  if (account.tokenStatus === "healthy") {
+    return (
+      <motion.span
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        className="rounded-full bg-green-500/20 px-2 py-0.5 text-xs text-green-400"
+      >
+        Connected
+      </motion.span>
+    );
+  }
+
+  return null;
+}
+
 function PlatformCard({
   account,
   onSettingsClick,
@@ -156,17 +210,25 @@ function PlatformCard({
 
   // Get setup items based on platform
   const getSetupItems = () => {
+    // OAuth is only valid if connected AND token not expired
+    const isOAuthValid =
+      account.setup.oauth && account.tokenStatus !== "expired";
+    const platformName =
+      account.platform === "twitter"
+        ? "Twitter"
+        : account.platform === "youtube"
+          ? "YouTube"
+          : account.platform === "instagram"
+            ? "Instagram"
+            : "Reddit";
+
     const items = [
       {
         label:
-          account.platform === "twitter"
-            ? "Twitter"
-            : account.platform === "youtube"
-              ? "YouTube"
-              : account.platform === "instagram"
-                ? "Instagram"
-                : "Reddit",
-        done: account.setup.oauth,
+          account.tokenStatus === "expired"
+            ? `${platformName} (re-login)`
+            : platformName,
+        done: isOAuthValid,
       },
     ];
 
@@ -229,15 +291,7 @@ function PlatformCard({
         <h3 className="text-sm font-semibold capitalize tracking-wide text-white/90">
           {label}
         </h3>
-        {account.isConnected && (
-          <motion.span
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="rounded-full bg-green-500/20 px-2 py-0.5 text-xs text-green-400"
-          >
-            Connected
-          </motion.span>
-        )}
+        <TokenStatusBadge account={account} />
       </div>
 
       {/* Icon */}
@@ -643,17 +697,25 @@ function MobilePlatformCard({
 
   // Get setup items based on platform
   const getSetupItems = () => {
+    // OAuth is only valid if connected AND token not expired
+    const isOAuthValid =
+      account.setup.oauth && account.tokenStatus !== "expired";
+    const platformName =
+      account.platform === "twitter"
+        ? "Twitter"
+        : account.platform === "youtube"
+          ? "YouTube"
+          : account.platform === "instagram"
+            ? "Instagram"
+            : "Reddit";
+
     const items = [
       {
         label:
-          account.platform === "twitter"
-            ? "Twitter"
-            : account.platform === "youtube"
-              ? "YouTube"
-              : account.platform === "instagram"
-                ? "Instagram"
-                : "Reddit",
-        done: account.setup.oauth,
+          account.tokenStatus === "expired"
+            ? `${platformName} (re-login)`
+            : platformName,
+        done: isOAuthValid,
       },
     ];
 
@@ -737,7 +799,17 @@ function MobilePlatformCard({
         <div className="flex items-center gap-2">
           <div className={config.activeColor}>{config.icon}</div>
           <span className="text-sm font-medium text-white/80">{label}</span>
-          {account.isConnected && (
+          {account.tokenStatus === "expired" && (
+            <span className="rounded-full bg-red-500/20 px-1.5 py-0.5 text-[10px] text-red-400">
+              Expired
+            </span>
+          )}
+          {account.tokenStatus === "expiring_soon" && (
+            <span className="rounded-full bg-amber-500/20 px-1.5 py-0.5 text-[10px] text-amber-400">
+              Expiring
+            </span>
+          )}
+          {account.tokenStatus === "healthy" && (
             <span className="rounded-full bg-green-500/20 px-1.5 py-0.5 text-[10px] text-green-400">
               Connected
             </span>

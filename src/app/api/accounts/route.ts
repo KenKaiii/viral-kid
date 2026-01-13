@@ -2,6 +2,35 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
 
+type TokenStatus = "healthy" | "expiring_soon" | "expired" | "not_connected";
+
+function getTokenStatus(
+  accessToken: string | null,
+  tokenExpiresAt: Date | null
+): { status: TokenStatus; expiresAt: Date | null } {
+  if (!accessToken) {
+    return { status: "not_connected", expiresAt: null };
+  }
+
+  if (!tokenExpiresAt) {
+    // Has token but no expiration - assume healthy
+    return { status: "healthy", expiresAt: null };
+  }
+
+  const now = new Date();
+  const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+  if (tokenExpiresAt < now) {
+    return { status: "expired", expiresAt: tokenExpiresAt };
+  }
+
+  if (tokenExpiresAt < sevenDaysFromNow) {
+    return { status: "expiring_soon", expiresAt: tokenExpiresAt };
+  }
+
+  return { status: "healthy", expiresAt: tokenExpiresAt };
+}
+
 interface AccountWithCredentials {
   id: string;
   platform: string;
@@ -10,6 +39,7 @@ interface AccountWithCredentials {
   twitterCredentials: {
     username: string | null;
     accessToken: string | null;
+    tokenExpiresAt: Date | null;
     rapidApiKey: string | null;
   } | null;
   twitterConfig: {
@@ -19,6 +49,7 @@ interface AccountWithCredentials {
   youtubeCredentials: {
     channelTitle: string | null;
     accessToken: string | null;
+    tokenExpiresAt: Date | null;
   } | null;
   youtubeConfig: {
     enabled: boolean;
@@ -26,10 +57,12 @@ interface AccountWithCredentials {
   instagramCredentials: {
     instagramUsername: string | null;
     accessToken: string | null;
+    tokenExpiresAt: Date | null;
   } | null;
   redditCredentials: {
     username: string | null;
     accessToken: string | null;
+    tokenExpiresAt: Date | null;
   } | null;
   redditConfig: {
     enabled: boolean;
@@ -56,6 +89,7 @@ export async function GET() {
           select: {
             username: true,
             accessToken: true,
+            tokenExpiresAt: true,
             rapidApiKey: true,
           },
         },
@@ -69,6 +103,7 @@ export async function GET() {
           select: {
             channelTitle: true,
             accessToken: true,
+            tokenExpiresAt: true,
           },
         },
         youtubeConfig: {
@@ -80,12 +115,14 @@ export async function GET() {
           select: {
             instagramUsername: true,
             accessToken: true,
+            tokenExpiresAt: true,
           },
         },
         redditCredentials: {
           select: {
             username: true,
             accessToken: true,
+            tokenExpiresAt: true,
           },
         },
         redditConfig: {
@@ -111,6 +148,10 @@ export async function GET() {
         let hasApiKey = false; // Platform-specific API (RapidAPI for Twitter)
         let hasSearchTerm = false; // Twitter-specific search term
         let isAutomationEnabled = false; // Whether scheduled automation is active
+        let tokenHealth: { status: TokenStatus; expiresAt: Date | null } = {
+          status: "not_connected",
+          expiresAt: null,
+        };
 
         if (account.platform === "twitter") {
           isConnected = !!account.twitterCredentials?.accessToken;
@@ -120,12 +161,20 @@ export async function GET() {
           hasApiKey = !!account.twitterCredentials?.rapidApiKey;
           hasSearchTerm = !!account.twitterConfig?.searchTerm?.trim();
           isAutomationEnabled = account.twitterConfig?.enabled ?? false;
+          tokenHealth = getTokenStatus(
+            account.twitterCredentials?.accessToken ?? null,
+            account.twitterCredentials?.tokenExpiresAt ?? null
+          );
         } else if (account.platform === "youtube") {
           isConnected = !!account.youtubeCredentials?.accessToken;
           displayName = account.youtubeCredentials?.channelTitle || null;
           hasApiKey = true; // YouTube doesn't need extra API key for now
           hasSearchTerm = true; // YouTube doesn't need search term
           isAutomationEnabled = account.youtubeConfig?.enabled ?? false;
+          tokenHealth = getTokenStatus(
+            account.youtubeCredentials?.accessToken ?? null,
+            account.youtubeCredentials?.tokenExpiresAt ?? null
+          );
         } else if (account.platform === "instagram") {
           isConnected = !!account.instagramCredentials?.accessToken;
           displayName = account.instagramCredentials?.instagramUsername
@@ -134,6 +183,10 @@ export async function GET() {
           hasApiKey = true; // Instagram doesn't need extra API key for now
           hasSearchTerm = true; // Instagram doesn't need search term
           isAutomationEnabled = false; // TODO: Add when Instagram config has enabled field
+          tokenHealth = getTokenStatus(
+            account.instagramCredentials?.accessToken ?? null,
+            account.instagramCredentials?.tokenExpiresAt ?? null
+          );
         } else if (account.platform === "reddit") {
           isConnected = !!account.redditCredentials?.accessToken;
           displayName = account.redditCredentials?.username
@@ -142,15 +195,20 @@ export async function GET() {
           hasApiKey = true; // Reddit doesn't need extra API key
           hasSearchTerm = !!account.redditConfig?.keywords?.trim(); // Keywords for search
           isAutomationEnabled = account.redditConfig?.enabled ?? false;
+          tokenHealth = getTokenStatus(
+            account.redditCredentials?.accessToken ?? null,
+            account.redditCredentials?.tokenExpiresAt ?? null
+          );
         }
 
         // OpenRouter credentials (shared across platforms)
         const hasOpenRouterKey = !!account.openRouterCredentials?.apiKey;
         const hasLlmModel = !!account.openRouterCredentials?.selectedModel;
 
-        // Ready to run = all required credentials configured
+        // Ready to run = all required credentials configured AND token not expired
         const isReady =
           isConnected &&
+          tokenHealth.status !== "expired" &&
           hasApiKey &&
           hasSearchTerm &&
           hasOpenRouterKey &&
@@ -163,6 +221,8 @@ export async function GET() {
           order: account.order,
           isConnected,
           displayName,
+          tokenStatus: tokenHealth.status,
+          tokenExpiresAt: tokenHealth.expiresAt?.toISOString() ?? null,
           setup: {
             oauth: isConnected,
             apiKey: hasApiKey,

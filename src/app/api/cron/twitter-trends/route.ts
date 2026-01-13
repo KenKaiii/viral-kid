@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { getBaseUrl } from "@/lib/utils";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -56,9 +57,7 @@ export async function GET(request: Request): Promise<NextResponse> {
 
     // Process accounts in parallel
     const CONCURRENCY_LIMIT = 25;
-    const baseUrl = process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : process.env.NEXTAUTH_URL || "http://localhost:3000";
+    const baseUrl = getBaseUrl(request);
 
     const processAccount = async (config: (typeof accountsToProcess)[0]) => {
       const accountId = config.accountId;

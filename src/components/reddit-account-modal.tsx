@@ -31,11 +31,15 @@ interface RedditAccountModalProps {
   accountId: string;
 }
 
+type TokenStatus = "healthy" | "expiring_soon" | "expired" | "not_connected";
+
 interface RedditCredentialsState {
   clientId: string;
   clientSecret: string;
   redditUsername?: string;
   isConnected: boolean;
+  tokenStatus: TokenStatus;
+  tokenExpiresAt: string | null;
 }
 
 interface OpenRouterModel {
@@ -73,6 +77,8 @@ export function RedditAccountModal({
     clientId: "",
     clientSecret: "",
     isConnected: false,
+    tokenStatus: "not_connected",
+    tokenExpiresAt: null,
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -133,6 +139,8 @@ export function RedditAccountModal({
               clientSecret: data.clientSecret || "",
               redditUsername: data.redditUsername,
               isConnected: !!data.isConnected,
+              tokenStatus: data.tokenStatus || "not_connected",
+              tokenExpiresAt: data.tokenExpiresAt || null,
             });
           }
         })
@@ -387,15 +395,42 @@ export function RedditAccountModal({
                       exit="exit"
                       className="mb-6 rounded-lg border px-4 py-3"
                       style={{
-                        background: "rgba(34,197,94,0.1)",
-                        borderColor: "rgba(34,197,94,0.3)",
+                        background:
+                          credentials.tokenStatus === "expired"
+                            ? "rgba(239,68,68,0.1)"
+                            : credentials.tokenStatus === "expiring_soon"
+                              ? "rgba(245,158,11,0.1)"
+                              : "rgba(34,197,94,0.1)",
+                        borderColor:
+                          credentials.tokenStatus === "expired"
+                            ? "rgba(239,68,68,0.3)"
+                            : credentials.tokenStatus === "expiring_soon"
+                              ? "rgba(245,158,11,0.3)"
+                              : "rgba(34,197,94,0.3)",
                       }}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <div className="h-2 w-2 rounded-full bg-green-500" />
+                          <div
+                            className={`h-2 w-2 rounded-full ${
+                              credentials.tokenStatus === "expired"
+                                ? "bg-red-500"
+                                : credentials.tokenStatus === "expiring_soon"
+                                  ? "bg-amber-500"
+                                  : "bg-green-500"
+                            }`}
+                          />
                           <span className="text-sm text-white/90">
-                            Connected as u/{credentials.redditUsername}
+                            {credentials.tokenStatus === "expired" ? (
+                              <>Token expired - re-login required</>
+                            ) : credentials.tokenStatus === "expiring_soon" ? (
+                              <>
+                                Token expiring soon - u/
+                                {credentials.redditUsername}
+                              </>
+                            ) : (
+                              <>Connected as u/{credentials.redditUsername}</>
+                            )}
                           </span>
                         </div>
                         <motion.button
@@ -423,6 +458,8 @@ export function RedditAccountModal({
                               <Loader2 className="h-3 w-3 animate-spin" />
                               Disconnecting...
                             </span>
+                          ) : credentials.tokenStatus === "expired" ? (
+                            "Re-connect"
                           ) : (
                             "Disconnect"
                           )}
