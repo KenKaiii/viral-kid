@@ -7,9 +7,7 @@
   "deploy": {
     "startCommand": "./docker-entrypoint.sh",
     "restartPolicyType": "on_failure",
-    "restartPolicyMaxRetries": 10,
-    "healthcheckPath": "/api/health",
-    "healthcheckTimeout": 300
+    "restartPolicyMaxRetries": 10
   },
   "variables": {
     "DATABASE_URL": "${{Postgres.DATABASE_URL}}",
