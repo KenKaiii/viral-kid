@@ -6,7 +6,7 @@ if [ "$MODE" = "worker" ]; then
   exec npx tsx src/lib/jobs/worker.ts
 else
   echo "Running database migrations..."
-  npx prisma db push --skip-generate
+  npx prisma db push
   echo "Starting Next.js app..."
   exec npm run start
 fi
