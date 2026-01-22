@@ -33,9 +33,7 @@ export async function GET(request: Request) {
     }
 
     if (!code || !state) {
-      return NextResponse.redirect(
-        new URL("/?error=missing_params", baseUrl)
-      );
+      return NextResponse.redirect(new URL("/?error=missing_params", baseUrl));
     }
 
     const cookieStore = await cookies();
@@ -50,15 +48,11 @@ export async function GET(request: Request) {
     }
 
     if (!isValidState(state, storedState)) {
-      return NextResponse.redirect(
-        new URL("/?error=state_mismatch", baseUrl)
-      );
+      return NextResponse.redirect(new URL("/?error=state_mismatch", baseUrl));
     }
 
     if (!accountId) {
-      return NextResponse.redirect(
-        new URL("/?error=missing_account", baseUrl)
-      );
+      return NextResponse.redirect(new URL("/?error=missing_account", baseUrl));
     }
 
     const credentials = await db.twitterCredentials.findUnique({
@@ -66,9 +60,7 @@ export async function GET(request: Request) {
     });
 
     if (!credentials?.clientId || !credentials?.clientSecret) {
-      return NextResponse.redirect(
-        new URL("/?error=no_credentials", baseUrl)
-      );
+      return NextResponse.redirect(new URL("/?error=no_credentials", baseUrl));
     }
 
     const client = new TwitterApi({
