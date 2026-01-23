@@ -894,7 +894,7 @@ export function AccountModal({
                     />
 
                     <a
-                      href="https://rapidapi.com/omarmhaimdat/api/twitter154"
+                      href="https://rapidapi.com/viperscores-viperscores-default/api/twitter-aio"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="mt-2 inline-flex items-center gap-2 text-sm text-sky-400 transition-colors hover:text-sky-300"
