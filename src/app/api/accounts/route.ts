@@ -281,70 +281,71 @@ export async function POST(request: Request) {
       );
     }
 
-    // Check account limit per platform (max 3)
+    // Use transaction to prevent race conditions
     const MAX_ACCOUNTS_PER_PLATFORM = 3;
-    const existingCount = await db.account.count({
-      where: {
-        userId: effectiveUserId,
-        platform,
-      },
-    });
 
-    if (existingCount >= MAX_ACCOUNTS_PER_PLATFORM) {
-      return NextResponse.json(
-        {
-          error: `Maximum of ${MAX_ACCOUNTS_PER_PLATFORM} accounts per platform reached`,
+    const account = await db.$transaction(async (tx) => {
+      // Check account limit per platform (max 3) - inside transaction for atomicity
+      const existingCount = await tx.account.count({
+        where: {
+          userId: effectiveUserId,
+          platform,
         },
-        { status: 400 }
-      );
-    }
+      });
 
-    // Get the highest order value for this user
-    const lastAccount = await db.account.findFirst({
-      where: { userId: effectiveUserId },
-      orderBy: { order: "desc" },
-    });
-    const newOrder = (lastAccount?.order ?? -1) + 1;
+      if (existingCount >= MAX_ACCOUNTS_PER_PLATFORM) {
+        throw new Error(
+          `Maximum of ${MAX_ACCOUNTS_PER_PLATFORM} accounts per platform reached`
+        );
+      }
 
-    // Create the account with its related credentials and config
-    const platformData =
-      platform === "twitter"
-        ? {
-            twitterCredentials: { create: {} },
-            twitterConfig: { create: {} },
-          }
-        : platform === "youtube"
+      // Get the highest order value for this user
+      const lastAccount = await tx.account.findFirst({
+        where: { userId: effectiveUserId },
+        orderBy: { order: "desc" },
+      });
+      const newOrder = (lastAccount?.order ?? -1) + 1;
+
+      // Create the account with its related credentials and config
+      const platformData =
+        platform === "twitter"
           ? {
-              youtubeCredentials: { create: {} },
-              youtubeConfig: { create: {} },
+              twitterCredentials: { create: {} },
+              twitterConfig: { create: {} },
             }
-          : platform === "instagram"
+          : platform === "youtube"
             ? {
-                instagramCredentials: { create: {} },
-                instagramConfig: { create: {} },
+                youtubeCredentials: { create: {} },
+                youtubeConfig: { create: {} },
               }
-            : {
-                redditCredentials: { create: {} },
-                redditConfig: { create: {} },
-              };
+            : platform === "instagram"
+              ? {
+                  instagramCredentials: { create: {} },
+                  instagramConfig: { create: {} },
+                }
+              : {
+                  redditCredentials: { create: {} },
+                  redditConfig: { create: {} },
+                };
 
-    const account = await db.account.create({
-      data: {
-        platform,
-        order: newOrder,
-        userId: effectiveUserId,
-        ...platformData,
-      },
-      include: {
-        twitterCredentials: true,
-        twitterConfig: true,
-        youtubeCredentials: true,
-        youtubeConfig: true,
-        instagramCredentials: true,
-        instagramConfig: true,
-        redditCredentials: true,
-        redditConfig: true,
-      },
+      return tx.account.create({
+        data: {
+          platform,
+          order: newOrder,
+          userId: effectiveUserId,
+          ...platformData,
+        },
+        include: {
+          twitterCredentials: true,
+          twitterConfig: true,
+          youtubeCredentials: true,
+          youtubeConfig: true,
+          instagramCredentials: true,
+          instagramConfig: true,
+          redditCredentials: true,
+          redditConfig: true,
+        },
+      });
     });
 
     return NextResponse.json({
@@ -356,6 +357,10 @@ export async function POST(request: Request) {
       displayName: null,
     });
   } catch (error) {
+    // Check if this is a limit exceeded error from our transaction
+    if (error instanceof Error && error.message.includes("Maximum of")) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
     console.error("Failed to create account:", error);
     return NextResponse.json(
       { error: "Failed to create account" },

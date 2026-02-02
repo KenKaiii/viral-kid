@@ -110,22 +110,20 @@ export async function POST(request: Request) {
       );
     }
 
-    // Check if user already exists
-    const existingUser = await db.user.findUnique({
-      where: { email: email.toLowerCase() },
-    });
-    if (existingUser) {
-      return NextResponse.json(
-        { error: "User with this email already exists" },
-        { status: 400 }
-      );
-    }
-
-    // Hash password
+    // Hash password before transaction (CPU-intensive, don't hold transaction open)
     const passwordHash = await bcrypt.hash(password, 12);
 
     // Create user, default accounts, and mark invite as used in a transaction
+    // All checks are inside the transaction to prevent race conditions
     const user = await db.$transaction(async (tx) => {
+      // Check if user already exists - inside transaction for atomicity
+      const existingUser = await tx.user.findUnique({
+        where: { email: email.toLowerCase() },
+      });
+      if (existingUser) {
+        throw new Error("User with this email already exists");
+      }
+
       // Create the user
       const newUser = await tx.user.create({
         data: {
@@ -192,6 +190,10 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
+    // Check if this is a user-exists error from our transaction
+    if (error instanceof Error && error.message.includes("already exists")) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
     console.error("Failed to create user:", error);
     return NextResponse.json(
       { error: "Failed to create account" },
