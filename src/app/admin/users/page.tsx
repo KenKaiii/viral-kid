@@ -205,7 +205,10 @@ export default function AdminUsersPage() {
             </div>
 
             {/* Users List */}
-            <div className="max-h-[60vh] overflow-y-auto p-4">
+            <div
+              className="max-h-[60vh] overflow-y-auto p-4"
+              data-lenis-prevent
+            >
               {users.length === 0 ? (
                 <div className="flex flex-col items-center gap-2 py-8 text-center">
                   <Users className="h-8 w-8 text-white/20" />
