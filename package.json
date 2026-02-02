@@ -7,8 +7,8 @@
   },
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "prisma generate && prisma migrate deploy && next build",
-    "start": "next start",
+    "build": "prisma generate && next build",
+    "start": "prisma migrate deploy && next start",
     "lint": "eslint . --fix",
     "lint:check": "eslint .",
     "format": "prettier --write .",
