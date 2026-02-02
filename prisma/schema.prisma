@@ -224,6 +224,7 @@ model OpenRouterCredentials {
   apiKey       String   @default("")
   systemPrompt String?  // Custom system prompt for AI agents
   selectedModel String? // Selected LLM model ID
+  selectedVisionModel String? // Selected vision/multimodal model ID for image analysis
   // Style options (injected into system prompt)
   noHashtags      Boolean @default(false)
   noEmojis        Boolean @default(false)

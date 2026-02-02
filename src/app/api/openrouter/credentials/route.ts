@@ -36,6 +36,7 @@ export async function GET(request: Request) {
         apiKey: "",
         systemPrompt: "",
         selectedModel: "",
+        selectedVisionModel: "",
         noHashtags: false,
         noEmojis: false,
         noCapitalization: false,
@@ -47,6 +48,7 @@ export async function GET(request: Request) {
       apiKey: credentials.apiKey ? "••••••••" : "",
       systemPrompt: credentials.systemPrompt || "",
       selectedModel: credentials.selectedModel || "",
+      selectedVisionModel: credentials.selectedVisionModel || "",
       noHashtags: credentials.noHashtags,
       noEmojis: credentials.noEmojis,
       noCapitalization: credentials.noCapitalization,
@@ -92,6 +94,7 @@ export async function POST(request: Request) {
       apiKey,
       systemPrompt,
       selectedModel,
+      selectedVisionModel,
       noHashtags,
       noEmojis,
       noCapitalization,
@@ -103,6 +106,7 @@ export async function POST(request: Request) {
       apiKey?: string;
       systemPrompt?: string;
       selectedModel?: string;
+      selectedVisionModel?: string;
       noHashtags?: boolean;
       noEmojis?: boolean;
       noCapitalization?: boolean;
@@ -113,6 +117,7 @@ export async function POST(request: Request) {
       apiKey?: string;
       systemPrompt?: string;
       selectedModel?: string;
+      selectedVisionModel?: string;
       noHashtags?: boolean;
       noEmojis?: boolean;
       noCapitalization?: boolean;
@@ -131,6 +136,10 @@ export async function POST(request: Request) {
     if (selectedModel !== undefined) {
       updateData.selectedModel = selectedModel;
       createData.selectedModel = selectedModel;
+    }
+    if (selectedVisionModel !== undefined) {
+      updateData.selectedVisionModel = selectedVisionModel;
+      createData.selectedVisionModel = selectedVisionModel;
     }
     if (noHashtags !== undefined) {
       updateData.noHashtags = noHashtags;
@@ -159,6 +168,7 @@ export async function POST(request: Request) {
       apiKey: credentials.apiKey ? "••••••••" : "",
       systemPrompt: credentials.systemPrompt || "",
       selectedModel: credentials.selectedModel || "",
+      selectedVisionModel: credentials.selectedVisionModel || "",
       noHashtags: credentials.noHashtags,
       noEmojis: credentials.noEmojis,
       noCapitalization: credentials.noCapitalization,

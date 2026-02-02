@@ -3,6 +3,11 @@ import { TwitterApi } from "twitter-api-v2";
 import { db } from "@/lib/db";
 import { auth, getEffectiveUserId } from "@/lib/auth";
 
+interface MediaEntity {
+  type: "photo" | "video" | "animated_gif";
+  media_url_https: string;
+}
+
 interface TweetResult {
   __typename: string;
   rest_id: string;
@@ -24,6 +29,9 @@ interface TweetResult {
     favorite_count: number;
     reply_count: number;
     created_at: string;
+    extended_entities?: {
+      media?: MediaEntity[];
+    };
   };
 }
 
@@ -52,6 +60,7 @@ interface ParsedTweet {
   views: number;
   hearts: number;
   replies: number;
+  imageUrls: string[];
 }
 
 async function createLog(
@@ -120,7 +129,8 @@ async function fetchTweetsFromRapidAPI(
   const filters = {
     since: today,
     minimumLikesCount,
-    removePostsWithMedia: true,
+    // Allow images but still remove videos via client-side filtering
+    removePostsWithMedia: false,
     removeReplies: true,
     removePostsWithLinks: true,
   };
@@ -163,6 +173,18 @@ async function fetchTweetsFromRapidAPI(
     if (!result || result.__typename !== "Tweet") continue;
 
     try {
+      // Check for media - skip videos, allow images
+      const media = result.legacy.extended_entities?.media || [];
+      const hasVideo = media.some(
+        (m) => m.type === "video" || m.type === "animated_gif"
+      );
+      if (hasVideo) continue; // Skip tweets with videos
+
+      // Extract image URLs
+      const imageUrls = media
+        .filter((m) => m.type === "photo")
+        .map((m) => m.media_url_https);
+
       tweets.push({
         tweetId: result.rest_id,
         userTweet: result.legacy.full_text,
@@ -170,6 +192,7 @@ async function fetchTweetsFromRapidAPI(
         views: parseInt(result.views?.count || "0", 10),
         hearts: result.legacy.favorite_count,
         replies: result.legacy.reply_count || 0,
+        imageUrls,
       });
     } catch {
       continue;
@@ -177,6 +200,67 @@ async function fetchTweetsFromRapidAPI(
   }
 
   return tweets;
+}
+
+async function analyzeImageWithVision(
+  apiKey: string,
+  visionModel: string,
+  imageUrls: string[]
+): Promise<string> {
+  if (!visionModel || imageUrls.length === 0) {
+    return "";
+  }
+
+  // Build content array with images
+  const content: Array<
+    | { type: "text"; text: string }
+    | { type: "image_url"; image_url: { url: string } }
+  > = [
+    {
+      type: "text",
+      text: "Briefly describe what you see in this image(s) in 1-2 sentences. Focus on the main subject matter.",
+    },
+  ];
+
+  // Add images (limit to first 4)
+  for (const url of imageUrls.slice(0, 4)) {
+    content.push({
+      type: "image_url",
+      image_url: { url },
+    });
+  }
+
+  const response = await fetch(
+    "https://openrouter.ai/api/v1/chat/completions",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": process.env.NEXTAUTH_URL || "https://viral-kid.app",
+        "X-Title": "Viral Kid",
+      },
+      body: JSON.stringify({
+        model: visionModel,
+        messages: [
+          {
+            role: "user",
+            content,
+          },
+        ],
+        max_tokens: 150,
+        temperature: 0.3,
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    console.error("Vision model error:", await response.text());
+    return "";
+  }
+
+  const data = await response.json();
+  return data.choices?.[0]?.message?.content?.trim() || "";
 }
 
 async function generateReplyWithLLM(
@@ -190,7 +274,8 @@ async function generateReplyWithLLM(
     noEmojis: boolean;
     noCapitalization: boolean;
     badGrammar: boolean;
-  }
+  },
+  imageDescription?: string
 ): Promise<string> {
   // Build style instructions
   const styleInstructions: string[] = [];
@@ -210,6 +295,12 @@ async function generateReplyWithLLM(
     .filter(Boolean)
     .join(" ");
 
+  // Build the user message with optional image context
+  let userMessage = `Write a reply to this tweet from @${username}:\n\n"${tweetContent}"`;
+  if (imageDescription) {
+    userMessage += `\n\n[The tweet includes an image: ${imageDescription}]`;
+  }
+
   const response = await fetch(
     "https://openrouter.ai/api/v1/chat/completions",
     {
@@ -226,7 +317,7 @@ async function generateReplyWithLLM(
           { role: "system", content: fullSystemPrompt },
           {
             role: "user",
-            content: `Write a reply to this tweet from @${username}:\n\n"${tweetContent}"`,
+            content: userMessage,
           },
         ],
         max_tokens: 1500,
@@ -454,13 +545,41 @@ export async function POST(request: Request) {
 
     const bestTweet = unrepliedTweets[0]!;
 
+    const hasImages = bestTweet.imageUrls.length > 0;
     await createLog(
       accountId,
       "info",
-      `Selected tweet by @${bestTweet.username} (${bestTweet.hearts} likes, ${bestTweet.replies} replies)`
+      `Selected tweet by @${bestTweet.username} (${bestTweet.hearts} likes, ${bestTweet.replies} replies)${hasImages ? ` [${bestTweet.imageUrls.length} image(s)]` : ""}`
     );
 
-    // Step 5: Generate LLM reply
+    // Step 5: Analyze images if present and vision model is configured
+    let imageDescription = "";
+    if (hasImages && openRouterCredentials.selectedVisionModel) {
+      try {
+        await createLog(
+          accountId,
+          "info",
+          "Analyzing image(s) with vision model..."
+        );
+        imageDescription = await analyzeImageWithVision(
+          openRouterCredentials.apiKey,
+          openRouterCredentials.selectedVisionModel,
+          bestTweet.imageUrls
+        );
+        if (imageDescription) {
+          await createLog(
+            accountId,
+            "info",
+            `Image analysis: "${imageDescription.slice(0, 50)}..."`
+          );
+        }
+      } catch (error) {
+        console.error("Vision model error:", error);
+        // Continue without image description if vision fails
+      }
+    }
+
+    // Step 6: Generate LLM reply
     let generatedReply: string;
     try {
       generatedReply = await generateReplyWithLLM(
@@ -474,7 +593,8 @@ export async function POST(request: Request) {
           noEmojis: openRouterCredentials.noEmojis,
           noCapitalization: openRouterCredentials.noCapitalization,
           badGrammar: openRouterCredentials.badGrammar,
-        }
+        },
+        imageDescription
       );
     } catch (error) {
       const message =

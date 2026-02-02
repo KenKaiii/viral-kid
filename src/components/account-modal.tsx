@@ -46,6 +46,7 @@ interface OpenRouterModel {
   description?: string;
   contextLength: number;
   pricing?: string | null;
+  supportsVision?: boolean;
 }
 
 function formatModelPrice(pricing?: string | null): string {
@@ -92,18 +93,30 @@ export function AccountModal({
   const [openRouterModels, setOpenRouterModels] = useState<OpenRouterModel[]>(
     []
   );
+  const [visionModels, setVisionModels] = useState<OpenRouterModel[]>([]);
   const [isSyncingModels, setIsSyncingModels] = useState(false);
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
+  const [isVisionDropdownOpen, setIsVisionDropdownOpen] = useState(false);
   const [modelSearchQuery, setModelSearchQuery] = useState("");
+  const [visionSearchQuery, setVisionSearchQuery] = useState("");
   const [selectedModel, setSelectedModel] = useState<OpenRouterModel | null>(
     null
   );
+  const [selectedVisionModel, setSelectedVisionModel] =
+    useState<OpenRouterModel | null>(null);
   const [isSystemPromptModalOpen, setIsSystemPromptModalOpen] = useState(false);
 
   // Ref for click-outside handling
   const modelDropdownRef = useRef<HTMLDivElement>(null);
   const modelButtonRef = useRef<HTMLButtonElement>(null);
+  const visionDropdownRef = useRef<HTMLDivElement>(null);
+  const visionButtonRef = useRef<HTMLButtonElement>(null);
   const [modelDropdownPos, setModelDropdownPos] = useState({
+    top: 0,
+    left: 0,
+    width: 0,
+  });
+  const [visionDropdownPos, setVisionDropdownPos] = useState({
     top: 0,
     left: 0,
     width: 0,
@@ -117,20 +130,28 @@ export function AccountModal({
 
   // Close dropdown when clicking outside
   useEffect(() => {
-    if (!isModelDropdownOpen) return;
+    if (!isModelDropdownOpen && !isVisionDropdownOpen) return;
 
     function handleClickOutside(event: MouseEvent) {
       if (
+        isModelDropdownOpen &&
         modelDropdownRef.current &&
         !modelDropdownRef.current.contains(event.target as Node)
       ) {
         setIsModelDropdownOpen(false);
       }
+      if (
+        isVisionDropdownOpen &&
+        visionDropdownRef.current &&
+        !visionDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsVisionDropdownOpen(false);
+      }
     }
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [isModelDropdownOpen]);
+  }, [isModelDropdownOpen, isVisionDropdownOpen]);
 
   useEffect(() => {
     if (isOpen && platform === "twitter" && accountId) {
@@ -163,16 +184,21 @@ export function AccountModal({
   // Fetch OpenRouter credentials and models
   useEffect(() => {
     if (isOpen && accountId) {
-      // First fetch models, then credentials (so we can match selectedModel)
-      fetch("/api/openrouter/models")
-        .then((res) => {
-          if (!res.ok) throw new Error("Failed to fetch");
-          return res.json();
-        })
-        .then((models) => {
-          if (!Array.isArray(models)) return;
-          setOpenRouterModels(models);
-          // Now fetch credentials and match the selected model
+      // Fetch all models and vision models in parallel
+      Promise.all([
+        fetch("/api/openrouter/models").then((res) =>
+          res.ok ? res.json() : []
+        ),
+        fetch("/api/openrouter/models?vision=true").then((res) =>
+          res.ok ? res.json() : []
+        ),
+      ])
+        .then(([allModels, visionOnlyModels]) => {
+          if (Array.isArray(allModels)) setOpenRouterModels(allModels);
+          if (Array.isArray(visionOnlyModels))
+            setVisionModels(visionOnlyModels);
+
+          // Now fetch credentials and match the selected models
           fetch(`/api/openrouter/credentials?accountId=${accountId}`)
             .then((res) => {
               if (!res.ok) throw new Error("Failed to fetch");
@@ -182,14 +208,19 @@ export function AccountModal({
               if (data.hasApiKey) {
                 setOpenRouterApiKey(data.apiKey);
               }
-              // Set the selected model from saved credentials
-              if (data.selectedModel) {
-                const savedModel = models.find(
+              // Set the selected LLM model
+              if (data.selectedModel && Array.isArray(allModels)) {
+                const savedModel = allModels.find(
                   (m: OpenRouterModel) => m.id === data.selectedModel
                 );
-                if (savedModel) {
-                  setSelectedModel(savedModel);
-                }
+                if (savedModel) setSelectedModel(savedModel);
+              }
+              // Set the selected vision model
+              if (data.selectedVisionModel && Array.isArray(visionOnlyModels)) {
+                const savedVisionModel = visionOnlyModels.find(
+                  (m: OpenRouterModel) => m.id === data.selectedVisionModel
+                );
+                if (savedVisionModel) setSelectedVisionModel(savedVisionModel);
               }
             });
         })
@@ -214,6 +245,11 @@ export function AccountModal({
       const data = await res.json();
       if (data.models) {
         setOpenRouterModels(data.models);
+        // Also update vision models (filter from synced models)
+        const visionOnly = data.models.filter(
+          (m: OpenRouterModel) => m.supportsVision
+        );
+        setVisionModels(visionOnly);
         toast.success("Models synced");
       }
     } catch {
@@ -837,6 +873,249 @@ export function AccountModal({
                                       ).length === 0 && (
                                         <p className="px-3 py-4 text-center text-xs text-white/40">
                                           No models found
+                                        </p>
+                                      )}
+                                    </div>
+                                  </motion.div>
+                                )}
+                            </AnimatePresence>,
+                            document.body
+                          )}
+                      </div>
+                    </div>
+
+                    {/* Vision Models Section */}
+                    <div className="mt-4">
+                      <div className="mb-2 flex items-center justify-between">
+                        <span className="text-sm font-semibold tracking-wide text-white/90">
+                          Vision Model
+                        </span>
+                        {visionModels.length > 0 && (
+                          <span
+                            className="rounded-full px-2 py-0.5 text-xs font-medium text-white/70"
+                            style={{
+                              backgroundColor: "rgba(255,255,255,0.1)",
+                            }}
+                          >
+                            {visionModels.length}
+                          </span>
+                        )}
+                      </div>
+                      <p className="mb-2 text-xs text-white/50">
+                        For analyzing images in tweets
+                      </p>
+
+                      {/* Vision Model Dropdown */}
+                      <div className="relative" ref={visionDropdownRef}>
+                        <motion.button
+                          ref={visionButtonRef}
+                          type="button"
+                          onClick={() => {
+                            if (
+                              !isVisionDropdownOpen &&
+                              visionButtonRef.current
+                            ) {
+                              const rect =
+                                visionButtonRef.current.getBoundingClientRect();
+                              setVisionDropdownPos({
+                                top: rect.bottom + 4,
+                                left: rect.left,
+                                width: rect.width,
+                              });
+                            }
+                            setIsVisionDropdownOpen(!isVisionDropdownOpen);
+                          }}
+                          disabled={visionModels.length === 0}
+                          className="flex w-full items-center justify-between rounded-lg border px-3 py-2.5 text-left"
+                          style={{
+                            background: "rgba(255,255,255,0.05)",
+                            borderColor: isVisionDropdownOpen
+                              ? "rgba(255,255,255,0.3)"
+                              : "rgba(255,255,255,0.1)",
+                            cursor:
+                              visionModels.length === 0
+                                ? "not-allowed"
+                                : "pointer",
+                          }}
+                          whileHover={
+                            visionModels.length === 0
+                              ? {}
+                              : { borderColor: "rgba(255,255,255,0.2)" }
+                          }
+                          transition={{ duration: 0.15 }}
+                        >
+                          <span
+                            className="truncate text-sm"
+                            style={{
+                              color: selectedVisionModel
+                                ? "rgba(255,255,255,0.9)"
+                                : "rgba(255,255,255,0.4)",
+                            }}
+                          >
+                            {selectedVisionModel
+                              ? formatModelName(selectedVisionModel.name)
+                              : visionModels.length === 0
+                                ? "Sync models first..."
+                                : "Select a vision model..."}
+                          </span>
+                          <motion.div
+                            animate={{ rotate: isVisionDropdownOpen ? 180 : 0 }}
+                            transition={{ duration: 0.2 }}
+                          >
+                            <ChevronDown className="h-4 w-4 shrink-0 text-white/50" />
+                          </motion.div>
+                        </motion.button>
+
+                        {typeof document !== "undefined" &&
+                          createPortal(
+                            <AnimatePresence>
+                              {isVisionDropdownOpen &&
+                                visionModels.length > 0 && (
+                                  <motion.div
+                                    variants={dropdownVariants}
+                                    initial="hidden"
+                                    animate="visible"
+                                    exit="exit"
+                                    className="overflow-hidden rounded-lg border"
+                                    style={{
+                                      position: "fixed",
+                                      top: visionDropdownPos.top,
+                                      left: visionDropdownPos.left,
+                                      width: visionDropdownPos.width,
+                                      zIndex: 99999,
+                                      background:
+                                        "linear-gradient(to bottom, rgba(30,30,30,0.98) 0%, rgba(20,20,20,0.98) 100%)",
+                                      borderColor: "rgba(255,255,255,0.15)",
+                                      boxShadow: "0 8px 32px rgba(0,0,0,0.6)",
+                                    }}
+                                  >
+                                    {/* Search Input */}
+                                    <div
+                                      className="border-b p-2"
+                                      style={{
+                                        borderColor: "rgba(255,255,255,0.1)",
+                                      }}
+                                    >
+                                      <div className="relative">
+                                        <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/40" />
+                                        <input
+                                          type="text"
+                                          value={visionSearchQuery}
+                                          onChange={(e) =>
+                                            setVisionSearchQuery(e.target.value)
+                                          }
+                                          placeholder="Search vision models..."
+                                          className="w-full rounded border bg-transparent py-1.5 pr-3 pl-8 text-sm text-white/90 outline-none"
+                                          style={{
+                                            borderColor:
+                                              "rgba(255,255,255,0.1)",
+                                          }}
+                                          autoFocus
+                                        />
+                                      </div>
+                                    </div>
+
+                                    {/* Vision Model List */}
+                                    <div
+                                      className="max-h-48 overflow-y-auto"
+                                      data-lenis-prevent
+                                    >
+                                      {visionModels
+                                        .filter(
+                                          (model) =>
+                                            model.name
+                                              .toLowerCase()
+                                              .includes(
+                                                visionSearchQuery.toLowerCase()
+                                              ) ||
+                                            model.id
+                                              .toLowerCase()
+                                              .includes(
+                                                visionSearchQuery.toLowerCase()
+                                              )
+                                        )
+                                        .slice(0, 100)
+                                        .map((model, index) => (
+                                          <motion.button
+                                            key={model.id}
+                                            type="button"
+                                            onClick={async () => {
+                                              setSelectedVisionModel(model);
+                                              setIsVisionDropdownOpen(false);
+                                              setVisionSearchQuery("");
+                                              // Save the selected vision model immediately
+                                              try {
+                                                await fetch(
+                                                  `/api/openrouter/credentials?accountId=${accountId}`,
+                                                  {
+                                                    method: "POST",
+                                                    headers: {
+                                                      "Content-Type":
+                                                        "application/json",
+                                                    },
+                                                    body: JSON.stringify({
+                                                      selectedVisionModel:
+                                                        model.id,
+                                                    }),
+                                                  }
+                                                );
+                                              } catch (err) {
+                                                console.error(
+                                                  "Failed to save vision model selection:",
+                                                  err
+                                                );
+                                              }
+                                            }}
+                                            className="w-full px-3 py-2.5 text-left text-sm"
+                                            style={{
+                                              color:
+                                                selectedVisionModel?.id ===
+                                                model.id
+                                                  ? "rgba(255,255,255,1)"
+                                                  : "rgba(255,255,255,0.7)",
+                                              backgroundColor:
+                                                selectedVisionModel?.id ===
+                                                model.id
+                                                  ? "rgba(255,255,255,0.1)"
+                                                  : "rgba(0,0,0,0)",
+                                            }}
+                                            initial={{ opacity: 0, x: -10 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            transition={{ delay: index * 0.01 }}
+                                            whileHover={{
+                                              backgroundColor:
+                                                "rgba(255,255,255,0.08)",
+                                              color: "rgba(255,255,255,0.9)",
+                                            }}
+                                          >
+                                            <div className="truncate">
+                                              {formatModelName(model.name)}
+                                            </div>
+                                            <div
+                                              className="truncate text-xs"
+                                              style={{
+                                                color: "rgba(255,255,255,0.4)",
+                                              }}
+                                            >
+                                              {formatModelPrice(model.pricing)}
+                                            </div>
+                                          </motion.button>
+                                        ))}
+                                      {visionModels.filter(
+                                        (model) =>
+                                          model.name
+                                            .toLowerCase()
+                                            .includes(
+                                              visionSearchQuery.toLowerCase()
+                                            ) ||
+                                          model.id
+                                            .toLowerCase()
+                                            .includes(
+                                              visionSearchQuery.toLowerCase()
+                                            )
+                                      ).length === 0 && (
+                                        <p className="px-3 py-4 text-center text-xs text-white/40">
+                                          No vision models found
                                         </p>
                                       )}
                                     </div>
