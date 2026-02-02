@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { auth } from "@/lib/auth";
+import { auth, getEffectiveUserId } from "@/lib/auth";
 
 type TokenStatus = "healthy" | "expiring_soon" | "expired" | "not_connected";
 
@@ -38,7 +38,7 @@ export async function GET(request: Request) {
 
     // Verify account belongs to user
     const account = await db.account.findFirst({
-      where: { id: accountId, userId: session.user.id },
+      where: { id: accountId, userId: getEffectiveUserId(session)! },
     });
     if (!account) {
       return NextResponse.json({ error: "Account not found" }, { status: 404 });
@@ -99,7 +99,7 @@ export async function POST(request: Request) {
 
     // Verify account belongs to user
     const account = await db.account.findFirst({
-      where: { id: accountId, userId: session.user.id },
+      where: { id: accountId, userId: getEffectiveUserId(session)! },
     });
     if (!account) {
       return NextResponse.json({ error: "Account not found" }, { status: 404 });

@@ -6,6 +6,9 @@ declare module "next-auth" {
       id: string;
       email: string;
       role: "ADMIN" | "USER";
+      // Admin impersonation fields
+      impersonatingUserId?: string;
+      impersonatingUserEmail?: string;
     };
   }
 
@@ -20,5 +23,8 @@ declare module "next-auth/jwt" {
   interface JWT {
     id: string;
     role: "ADMIN" | "USER";
+    // Admin impersonation fields
+    impersonatingUserId?: string;
+    impersonatingUserEmail?: string;
   }
 }

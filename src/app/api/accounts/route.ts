@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { auth } from "@/lib/auth";
+import { auth, getEffectiveUserId } from "@/lib/auth";
 
 type TokenStatus = "healthy" | "expiring_soon" | "expired" | "not_connected";
 
@@ -81,8 +81,14 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Use effective user ID (handles admin impersonation)
+    const effectiveUserId = getEffectiveUserId(session);
+    if (!effectiveUserId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const accounts = await db.account.findMany({
-      where: { userId: session.user.id },
+      where: { userId: effectiveUserId },
       orderBy: { order: "asc" },
       include: {
         twitterCredentials: {
@@ -253,6 +259,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Use effective user ID (handles admin impersonation)
+    const effectiveUserId = getEffectiveUserId(session);
+    if (!effectiveUserId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await request.json();
     const { platform } = body;
 
@@ -273,7 +285,7 @@ export async function POST(request: Request) {
     const MAX_ACCOUNTS_PER_PLATFORM = 3;
     const existingCount = await db.account.count({
       where: {
-        userId: session.user.id,
+        userId: effectiveUserId,
         platform,
       },
     });
@@ -289,7 +301,7 @@ export async function POST(request: Request) {
 
     // Get the highest order value for this user
     const lastAccount = await db.account.findFirst({
-      where: { userId: session.user.id },
+      where: { userId: effectiveUserId },
       orderBy: { order: "desc" },
     });
     const newOrder = (lastAccount?.order ?? -1) + 1;
@@ -320,7 +332,7 @@ export async function POST(request: Request) {
       data: {
         platform,
         order: newOrder,
-        userId: session.user.id,
+        userId: effectiveUserId,
         ...platformData,
       },
       include: {

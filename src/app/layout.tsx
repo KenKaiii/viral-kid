@@ -4,6 +4,7 @@ import "./globals.css";
 import { LenisProvider } from "@/components/lenis-provider";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { Providers } from "@/components/providers";
+import { ImpersonationBanner } from "@/components/ui/impersonation-banner";
 
 const roboto = Roboto({
   subsets: ["latin"],
@@ -69,6 +70,7 @@ export default function RootLayout({
       >
         <ErrorBoundary>
           <Providers>
+            <ImpersonationBanner />
             <LenisProvider>{children}</LenisProvider>
           </Providers>
         </ErrorBoundary>

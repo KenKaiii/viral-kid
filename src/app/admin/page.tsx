@@ -16,6 +16,7 @@ import {
   ArrowLeft,
   Mail,
   Shield,
+  Users,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import Link from "next/link";
@@ -220,9 +221,21 @@ export default function AdminPage() {
               <ArrowLeft className="h-4 w-4" />
               Dashboard
             </Link>
-            <div className="flex items-center gap-2">
-              <Shield className="h-4 w-4 text-purple-400" />
-              <span className="text-sm font-medium text-white/70">Admin</span>
+            <div className="flex items-center gap-4">
+              <Link
+                href="/admin/users"
+                className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-white/60 transition-colors hover:text-white"
+                style={{
+                  background: "rgba(147, 51, 234, 0.2)",
+                }}
+              >
+                <Users className="h-4 w-4 text-purple-400" />
+                <span className="text-purple-300">Manage Users</span>
+              </Link>
+              <div className="flex items-center gap-2">
+                <Shield className="h-4 w-4 text-purple-400" />
+                <span className="text-sm font-medium text-white/70">Admin</span>
+              </div>
             </div>
           </motion.div>
 

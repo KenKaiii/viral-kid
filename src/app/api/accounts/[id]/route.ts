@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { auth } from "@/lib/auth";
+import { auth, getEffectiveUserId } from "@/lib/auth";
 
 export async function DELETE(
   _request: Request,
@@ -12,11 +12,17 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Use effective user ID (handles admin impersonation)
+    const effectiveUserId = getEffectiveUserId(session);
+    if (!effectiveUserId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { id } = await params;
 
-    // Ensure the account belongs to the current user
+    // Ensure the account belongs to the effective user
     await db.account.delete({
-      where: { id, userId: session.user.id },
+      where: { id, userId: effectiveUserId },
     });
 
     return NextResponse.json({ success: true });
@@ -39,13 +45,19 @@ export async function PATCH(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Use effective user ID (handles admin impersonation)
+    const effectiveUserId = getEffectiveUserId(session);
+    if (!effectiveUserId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { id } = await params;
     const body = await request.json();
     const { name } = body;
 
-    // Ensure the account belongs to the current user
+    // Ensure the account belongs to the effective user
     const account = await db.account.update({
-      where: { id, userId: session.user.id },
+      where: { id, userId: effectiveUserId },
       data: { name },
     });
 
