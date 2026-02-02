@@ -229,7 +229,7 @@ async function generateReplyWithLLM(
             content: `Write a reply to this tweet from @${username}:\n\n"${tweetContent}"`,
           },
         ],
-        max_tokens: 500,
+        max_tokens: 1500,
         temperature: 0.8,
         include_reasoning: true,
       }),

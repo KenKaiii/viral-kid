@@ -203,9 +203,9 @@ export function LogsModal({
                         background: "rgba(255,255,255,0.03)",
                       }}
                     >
-                      <div className="mb-1 flex items-start gap-2">
+                      <div className="mb-1 flex items-start gap-2 overflow-hidden">
                         <LogLevelIcon level={log.level} />
-                        <p className="flex-1 text-sm leading-relaxed text-white/80">
+                        <p className="min-w-0 flex-1 break-words text-sm leading-relaxed text-white/80">
                           {log.message}
                         </p>
                       </div>
