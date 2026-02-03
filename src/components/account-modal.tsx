@@ -231,15 +231,15 @@ export function AccountModal({
   }, [isOpen, accountId]);
 
   const handleSyncModels = async (apiKey?: string) => {
-    const keyToUse = apiKey || openRouterApiKey;
-    if (!keyToUse) return;
-
     setIsSyncingModels(true);
     try {
       const res = await fetch("/api/openrouter/models", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ apiKey: keyToUse }),
+        body: JSON.stringify({
+          accountId,
+          apiKey: apiKey || openRouterApiKey,
+        }),
       });
 
       const data = await res.json();

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { auth, getEffectiveUserId } from "@/lib/auth";
 
 interface OpenRouterModelResponse {
   id: string;
@@ -44,8 +45,41 @@ export async function GET(request: Request) {
 // POST - Sync models from OpenRouter API
 export async function POST(request: Request) {
   try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await request.json();
-    const { apiKey } = body;
+    let { apiKey } = body;
+    const { accountId } = body;
+
+    // If accountId provided and apiKey is masked/empty, fetch real key from DB
+    if (accountId && (!apiKey || apiKey.includes("•"))) {
+      const account = await db.account.findFirst({
+        where: { id: accountId, userId: getEffectiveUserId(session)! },
+      });
+      if (!account) {
+        return NextResponse.json(
+          { error: "Account not found" },
+          { status: 404 }
+        );
+      }
+
+      const credentials = await db.openRouterCredentials.findUnique({
+        where: { accountId },
+      });
+      if (credentials?.apiKey) {
+        apiKey = credentials.apiKey;
+      }
+    }
+
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: "No API key available" },
+        { status: 400 }
+      );
+    }
 
     // Fetch models from OpenRouter API with timeout
     const controller = new AbortController();
