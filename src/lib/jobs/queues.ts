@@ -107,10 +107,12 @@ export async function scheduleInstagramSendDm(
 export async function setupRecurringJobs(): Promise<void> {
   const q = getQueue();
 
-  // Remove old schedulers (migrating to consistent naming)
+  // Remove old/zombie schedulers still persisted in Redis
   await q.removeJobScheduler("twitter-automation-hourly").catch(() => {});
   await q.removeJobScheduler("reddit-automation-hourly").catch(() => {});
   await q.removeJobScheduler("youtube-comments-every-5min").catch(() => {});
+  await q.removeJobScheduler("twitter-trends-hourly").catch(() => {});
+  await q.removeJobScheduler("youtube-trends-every-2h").catch(() => {});
 
   // Twitter automation - every 5 minutes
   // (cron endpoint filters based on per-account schedule setting)

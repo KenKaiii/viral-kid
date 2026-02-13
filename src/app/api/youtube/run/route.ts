@@ -70,7 +70,7 @@ async function generateReplyWithLLM(
             content: `Write a reply to this YouTube comment from ${authorName} on your video "${videoTitle}":\n\n"${commentContent}"`,
           },
         ],
-        max_tokens: 1500,
+        max_tokens: 8000,
         temperature: 0.8,
         include_reasoning: true,
       }),
@@ -84,7 +84,41 @@ async function generateReplyWithLLM(
 
   const data = await response.json();
   const message = data.choices?.[0]?.message;
-  const reply = message?.content?.trim();
+  let reply = message?.content?.trim();
+
+  // Reasoning models may exhaust token budget on thinking (finish_reason: "length")
+  // and return empty content. Retry once without reasoning support.
+  if (!reply && data.choices?.[0]?.finish_reason === "length") {
+    const retryResponse = await fetch(
+      "https://openrouter.ai/api/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": process.env.NEXTAUTH_URL || "https://viral-kid.app",
+          "X-Title": "Viral Kid",
+        },
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: "system", content: fullSystemPrompt },
+            {
+              role: "user",
+              content: `Write a reply to this YouTube comment from ${authorName} on your video "${videoTitle}":\n\n"${commentContent}"`,
+            },
+          ],
+          max_tokens: 500,
+          temperature: 0.8,
+        }),
+      }
+    );
+
+    if (retryResponse.ok) {
+      const retryData = await retryResponse.json();
+      reply = retryData.choices?.[0]?.message?.content?.trim();
+    }
+  }
 
   if (!reply) {
     throw new Error(
