@@ -116,7 +116,7 @@ Jobs are defined in `src/lib/jobs/`. Add new job types in:
 
 Configured in `vercel.json`. Cron endpoints in `src/app/api/cron/`:
 
-- `/api/cron/twitter-trends` - Hourly
+- `/api/cron/twitter-automation` - Hourly
 - `/api/cron/youtube-trends` - Every 2 hours
 - `/api/cron/cleanup` - Daily at 3 AM
 

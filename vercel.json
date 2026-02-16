@@ -2,15 +2,15 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "crons": [
     {
-      "path": "/api/cron/twitter-trends",
+      "path": "/api/cron/twitter-automation",
       "schedule": "0 * * * *"
     },
     {
-      "path": "/api/cron/youtube-comments",
+      "path": "/api/cron/youtube-automation",
       "schedule": "*/5 * * * *"
     },
     {
-      "path": "/api/cron/reddit",
+      "path": "/api/cron/reddit-automation",
       "schedule": "0 * * * *"
     },
     {

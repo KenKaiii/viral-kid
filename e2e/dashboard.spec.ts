@@ -71,13 +71,13 @@ test.describe("Platform OAuth Initiation", () => {
 });
 
 test.describe("Cron Endpoints Protection", () => {
-  test("twitter-trends cron requires secret", async ({ request }) => {
-    const response = await request.get("/api/cron/twitter-trends");
+  test("twitter-automation cron requires secret", async ({ request }) => {
+    const response = await request.get("/api/cron/twitter-automation");
     expect(response.status()).toBe(401);
   });
 
-  test("youtube-trends cron requires secret", async ({ request }) => {
-    const response = await request.get("/api/cron/youtube-trends");
+  test("youtube-automation cron requires secret", async ({ request }) => {
+    const response = await request.get("/api/cron/youtube-automation");
     expect(response.status()).toBe(401);
   });
 
@@ -86,8 +86,8 @@ test.describe("Cron Endpoints Protection", () => {
     expect(response.status()).toBe(401);
   });
 
-  test("reddit cron requires secret", async ({ request }) => {
-    const response = await request.get("/api/cron/reddit");
+  test("reddit-automation cron requires secret", async ({ request }) => {
+    const response = await request.get("/api/cron/reddit-automation");
     expect(response.status()).toBe(401);
   });
 });

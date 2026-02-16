@@ -69,7 +69,7 @@ async function processRunTwitterAutomation(
   _data: RunTwitterAutomationData
 ): Promise<JobResult> {
   console.log("Running Twitter automation via BullMQ...");
-  const result = await callCronEndpoint("/api/cron/twitter-trends");
+  const result = await callCronEndpoint("/api/cron/twitter-automation");
 
   if (!result.success) {
     return { success: false, message: result.error };
@@ -87,7 +87,7 @@ async function processRunYouTubeAutomation(
   _data: RunYouTubeAutomationData
 ): Promise<JobResult> {
   console.log("Running YouTube automation via BullMQ...");
-  const result = await callCronEndpoint("/api/cron/youtube-comments");
+  const result = await callCronEndpoint("/api/cron/youtube-automation");
 
   if (!result.success) {
     return { success: false, message: result.error };
@@ -105,7 +105,7 @@ async function processRunRedditAutomation(
   _data: RunRedditAutomationData
 ): Promise<JobResult> {
   console.log("Running Reddit automation via BullMQ...");
-  const result = await callCronEndpoint("/api/cron/reddit");
+  const result = await callCronEndpoint("/api/cron/reddit-automation");
 
   if (!result.success) {
     return { success: false, message: result.error };
