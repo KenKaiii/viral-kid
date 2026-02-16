@@ -3,8 +3,8 @@ import { createRedisClient } from "../redis";
 import {
   JobNames,
   type JobName,
-  type FetchTwitterTrendsData,
-  type FetchYouTubeTrendsData,
+  type RunTwitterAutomationData,
+  type RunYouTubeAutomationData,
   type RunRedditAutomationData,
   type AnalyzeViralContentData,
   type CleanupOldDataData,
@@ -51,18 +51,18 @@ export async function addJob<T>(
 }
 
 // Convenience methods for each job type
-export async function scheduleFetchTwitterTrends(
-  data: FetchTwitterTrendsData,
+export async function scheduleRunTwitterAutomation(
+  data: RunTwitterAutomationData,
   options?: JobsOptions
 ): Promise<string> {
-  return addJob(JobNames.FETCH_TWITTER_TRENDS, data, options);
+  return addJob(JobNames.RUN_TWITTER_AUTOMATION, data, options);
 }
 
-export async function scheduleFetchYouTubeTrends(
-  data: FetchYouTubeTrendsData,
+export async function scheduleRunYouTubeAutomation(
+  data: RunYouTubeAutomationData,
   options?: JobsOptions
 ): Promise<string> {
-  return addJob(JobNames.FETCH_YOUTUBE_TRENDS, data, options);
+  return addJob(JobNames.RUN_YOUTUBE_AUTOMATION, data, options);
 }
 
 export async function scheduleAnalyzeViralContent(
@@ -113,33 +113,36 @@ export async function setupRecurringJobs(): Promise<void> {
   await q.removeJobScheduler("youtube-comments-every-5min").catch(() => {});
   await q.removeJobScheduler("twitter-trends-hourly").catch(() => {});
   await q.removeJobScheduler("youtube-trends-every-2h").catch(() => {});
+  await q.removeJobScheduler("twitter-automation").catch(() => {});
+  await q.removeJobScheduler("youtube-comments-automation").catch(() => {});
+  await q.removeJobScheduler("reddit-automation").catch(() => {});
 
-  // Twitter automation - every 5 minutes
+  // Twitter automation scheduler - polls every 5 minutes
   // (cron endpoint filters based on per-account schedule setting)
   await q.upsertJobScheduler(
-    "twitter-automation",
+    "scheduler-twitter-automation",
     { pattern: "*/5 * * * *" },
     {
-      name: JobNames.FETCH_TWITTER_TRENDS,
+      name: JobNames.RUN_TWITTER_AUTOMATION,
       data: {},
     }
   );
 
-  // YouTube comments automation - every 5 minutes
+  // YouTube automation scheduler - polls every 5 minutes
   // (cron endpoint filters based on per-account schedule setting)
   await q.upsertJobScheduler(
-    "youtube-comments-automation",
+    "scheduler-youtube-automation",
     { pattern: "*/5 * * * *" },
     {
-      name: JobNames.FETCH_YOUTUBE_TRENDS,
+      name: JobNames.RUN_YOUTUBE_AUTOMATION,
       data: {},
     }
   );
 
-  // Reddit automation - every 5 minutes
+  // Reddit automation scheduler - polls every 5 minutes
   // (cron endpoint filters based on per-account schedule setting)
   await q.upsertJobScheduler(
-    "reddit-automation",
+    "scheduler-reddit-automation",
     { pattern: "*/5 * * * *" },
     {
       name: JobNames.RUN_REDDIT_AUTOMATION,
@@ -149,7 +152,7 @@ export async function setupRecurringJobs(): Promise<void> {
 
   // Cleanup old data daily at 3 AM UTC
   await q.upsertJobScheduler(
-    "cleanup-daily",
+    "scheduler-cleanup",
     { pattern: "0 3 * * *" },
     {
       name: JobNames.CLEANUP_OLD_DATA,
@@ -157,13 +160,17 @@ export async function setupRecurringJobs(): Promise<void> {
     }
   );
 
-  console.log("Recurring jobs scheduled:");
+  console.log("Recurring job schedulers registered:");
   console.log(
-    "  - Twitter automation: every 5 minutes (per-account filtering)"
+    "  - scheduler-twitter-automation: every 5 min (per-account filtering)"
   );
-  console.log("  - YouTube comments: every 5 minutes (per-account filtering)");
-  console.log("  - Reddit automation: every 5 minutes (per-account filtering)");
-  console.log("  - Cleanup: daily at 3 AM UTC");
+  console.log(
+    "  - scheduler-youtube-automation: every 5 min (per-account filtering)"
+  );
+  console.log(
+    "  - scheduler-reddit-automation: every 5 min (per-account filtering)"
+  );
+  console.log("  - scheduler-cleanup: daily at 3 AM UTC");
 }
 
 export async function closeQueue(): Promise<void> {

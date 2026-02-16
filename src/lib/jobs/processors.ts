@@ -1,8 +1,8 @@
 import type { Job } from "bullmq";
 import {
   JobNames,
-  type FetchTwitterTrendsData,
-  type FetchYouTubeTrendsData,
+  type RunTwitterAutomationData,
+  type RunYouTubeAutomationData,
   type AnalyzeViralContentData,
   type CleanupOldDataData,
   type InstagramProcessCommentData,
@@ -65,8 +65,8 @@ async function callCronEndpoint(
 
 // Job processor functions
 
-async function processFetchTwitterTrends(
-  _data: FetchTwitterTrendsData
+async function processRunTwitterAutomation(
+  _data: RunTwitterAutomationData
 ): Promise<JobResult> {
   console.log("Running Twitter automation via BullMQ...");
   const result = await callCronEndpoint("/api/cron/twitter-trends");
@@ -83,10 +83,10 @@ async function processFetchTwitterTrends(
   };
 }
 
-async function processFetchYouTubeTrends(
-  _data: FetchYouTubeTrendsData
+async function processRunYouTubeAutomation(
+  _data: RunYouTubeAutomationData
 ): Promise<JobResult> {
-  console.log("Running YouTube comments automation via BullMQ...");
+  console.log("Running YouTube automation via BullMQ...");
   const result = await callCronEndpoint("/api/cron/youtube-comments");
 
   if (!result.success) {
@@ -313,11 +313,11 @@ async function processInstagramSendDm(
 // Main job processor - routes jobs to appropriate handler
 export async function processJob(job: Job): Promise<JobResult> {
   switch (job.name) {
-    case JobNames.FETCH_TWITTER_TRENDS:
-      return processFetchTwitterTrends(job.data as FetchTwitterTrendsData);
+    case JobNames.RUN_TWITTER_AUTOMATION:
+      return processRunTwitterAutomation(job.data as RunTwitterAutomationData);
 
-    case JobNames.FETCH_YOUTUBE_TRENDS:
-      return processFetchYouTubeTrends(job.data as FetchYouTubeTrendsData);
+    case JobNames.RUN_YOUTUBE_AUTOMATION:
+      return processRunYouTubeAutomation(job.data as RunYouTubeAutomationData);
 
     case JobNames.RUN_REDDIT_AUTOMATION:
       return processRunRedditAutomation(job.data as RunRedditAutomationData);

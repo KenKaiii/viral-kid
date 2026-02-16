@@ -1,7 +1,7 @@
 // Job names - add new job types here
 export const JobNames = {
-  FETCH_TWITTER_TRENDS: "fetch-twitter-trends",
-  FETCH_YOUTUBE_TRENDS: "fetch-youtube-trends",
+  RUN_TWITTER_AUTOMATION: "run-twitter-automation",
+  RUN_YOUTUBE_AUTOMATION: "run-youtube-automation",
   RUN_REDDIT_AUTOMATION: "run-reddit-automation",
   ANALYZE_VIRAL_CONTENT: "analyze-viral-content",
   CLEANUP_OLD_DATA: "cleanup-old-data",
@@ -12,11 +12,11 @@ export const JobNames = {
 export type JobName = (typeof JobNames)[keyof typeof JobNames];
 
 // Job data types - define the payload for each job type
-export interface FetchTwitterTrendsData {
+export interface RunTwitterAutomationData {
   region?: string;
 }
 
-export interface FetchYouTubeTrendsData {
+export interface RunYouTubeAutomationData {
   region?: string;
   categoryId?: string;
 }
@@ -54,8 +54,8 @@ export interface InstagramSendDmData {
 
 // Union type for all job data
 export type JobData =
-  | FetchTwitterTrendsData
-  | FetchYouTubeTrendsData
+  | RunTwitterAutomationData
+  | RunYouTubeAutomationData
   | RunRedditAutomationData
   | AnalyzeViralContentData
   | CleanupOldDataData
