@@ -3,56 +3,6 @@ import { TwitterApi } from "twitter-api-v2";
 import { db } from "@/lib/db";
 import { auth, getEffectiveUserId } from "@/lib/auth";
 
-interface MediaEntity {
-  type: "photo" | "video" | "animated_gif";
-  media_url_https: string;
-}
-
-interface TweetResult {
-  __typename: string;
-  rest_id: string;
-  core: {
-    user_results: {
-      result: {
-        legacy: {
-          screen_name: string;
-          name: string;
-        };
-      };
-    };
-  };
-  views?: {
-    count: string;
-  };
-  legacy: {
-    full_text: string;
-    favorite_count: number;
-    reply_count: number;
-    created_at: string;
-    extended_entities?: {
-      media?: MediaEntity[];
-    };
-  };
-}
-
-interface TimelineEntry {
-  entryId: string;
-  content: {
-    itemContent?: {
-      tweet_results?: {
-        result?: TweetResult;
-      };
-    };
-  };
-}
-
-interface RapidAPIResponse {
-  entries: Array<{
-    type: string;
-    entries: TimelineEntry[];
-  }>;
-}
-
 interface ParsedTweet {
   tweetId: string;
   userTweet: string;
@@ -120,6 +70,11 @@ async function refreshTokenIfNeeded(
   }
 }
 
+interface FetchResult {
+  tweets: ParsedTweet[];
+  debug: string;
+}
+
 async function fetchTweetsFromRapidAPI(
   rapidApiKey: string,
   searchTerm: string,
@@ -129,7 +84,7 @@ async function fetchTweetsFromRapidAPI(
     removePostsWithLinks: boolean;
     removePostsWithMedia: boolean;
   }
-): Promise<ParsedTweet[]> {
+): Promise<FetchResult> {
   // Use rolling 24-hour window instead of "today" (UTC date can be very short window)
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000)
     .toISOString()
@@ -170,34 +125,60 @@ async function fetchTweetsFromRapidAPI(
   }
 
   if (!response.ok) {
-    throw new Error(`RapidAPI error: ${response.status}`);
+    const body = await response.text().catch(() => "");
+    throw new Error(`RapidAPI error ${response.status}: ${body.slice(0, 200)}`);
   }
 
-  const data: RapidAPIResponse = await response.json();
-  const tweets: ParsedTweet[] = [];
-  const entries = data.entries?.[0]?.entries || [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const data: any = await response.json();
 
-  console.log(
-    `[twitter-search] query="${searchTerm}" groups=${data.entries?.length ?? 0} entries=${entries.length}`
-  );
+  // Diagnostic: detect unexpected response shapes
+  const topLevelKeys = Object.keys(data || {});
+  if (!data?.entries) {
+    return {
+      tweets: [],
+      debug: `API returned no entries field. Keys: [${topLevelKeys.join(", ")}]. Raw: ${JSON.stringify(data).slice(0, 300)}`,
+    };
+  }
+
+  const entries = data.entries?.[0]?.entries || [];
+  const debugParts: string[] = [
+    `groups=${data.entries?.length ?? 0}`,
+    `entries=${entries.length}`,
+  ];
+
+  let skippedNotTweet = 0;
+  let skippedNoResult = 0;
+  let skippedVideo = 0;
+  let skippedParseError = 0;
+  const tweets: ParsedTweet[] = [];
 
   for (const entry of entries) {
-    if (!entry.entryId?.startsWith("tweet-")) continue;
+    if (!entry.entryId?.startsWith("tweet-")) {
+      skippedNotTweet++;
+      continue;
+    }
     const result = entry.content?.itemContent?.tweet_results?.result;
-    if (!result || result.__typename !== "Tweet") continue;
+    if (!result || result.__typename !== "Tweet") {
+      skippedNoResult++;
+      continue;
+    }
 
     try {
       // Check for media - skip videos, allow images
       const media = result.legacy.extended_entities?.media || [];
       const hasVideo = media.some(
-        (m) => m.type === "video" || m.type === "animated_gif"
+        (m: { type: string }) => m.type === "video" || m.type === "animated_gif"
       );
-      if (hasVideo) continue; // Skip tweets with videos
+      if (hasVideo) {
+        skippedVideo++;
+        continue;
+      }
 
       // Extract image URLs
       const imageUrls = media
-        .filter((m) => m.type === "photo")
-        .map((m) => m.media_url_https);
+        .filter((m: { type: string }) => m.type === "photo")
+        .map((m: { media_url_https: string }) => m.media_url_https);
 
       tweets.push({
         tweetId: result.rest_id,
@@ -209,11 +190,17 @@ async function fetchTweetsFromRapidAPI(
         imageUrls,
       });
     } catch {
+      skippedParseError++;
       continue;
     }
   }
 
-  return tweets;
+  debugParts.push(
+    `parsed=${tweets.length}`,
+    `skipped: notTweet=${skippedNotTweet} noResult=${skippedNoResult} video=${skippedVideo} parseErr=${skippedParseError}`
+  );
+
+  return { tweets, debug: debugParts.join(", ") };
 }
 
 async function analyzeImageWithVision(
@@ -514,9 +501,9 @@ export async function POST(request: Request) {
       `Searching for "${searchTerm}" with min ${minimumLikesCount} likes`
     );
 
-    let tweets: ParsedTweet[];
+    let fetchResult: FetchResult;
     try {
-      tweets = await fetchTweetsFromRapidAPI(
+      fetchResult = await fetchTweetsFromRapidAPI(
         twitterCredentials.rapidApiKey,
         searchTerm,
         minimumLikesCount,
@@ -533,14 +520,22 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: message }, { status: 500 });
     }
 
+    await createLog(
+      accountId,
+      "info",
+      `RapidAPI response: ${fetchResult.debug}`
+    );
+
     // Client-side filter as fallback (API filter may be unreliable)
-    tweets = tweets.filter((t) => t.hearts >= minimumLikesCount);
+    const tweets = fetchResult.tweets.filter(
+      (t) => t.hearts >= minimumLikesCount
+    );
 
     if (tweets.length === 0) {
       await createLog(
         accountId,
         "warning",
-        `No tweets found with at least ${minimumLikesCount} likes`
+        `No tweets found with at least ${minimumLikesCount} likes (pre-filter: ${fetchResult.tweets.length} tweets)`
       );
       return NextResponse.json({
         success: true,
