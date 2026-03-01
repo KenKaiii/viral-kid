@@ -104,7 +104,7 @@ async function fetchTweetsFromRapidAPI(
     `https://twitter-aio.p.rapidapi.com/search/${encodeURIComponent(searchTerm)}`
   );
   searchUrl.searchParams.set("count", "20");
-  searchUrl.searchParams.set("category", "Top");
+  searchUrl.searchParams.set("category", "Latest");
   searchUrl.searchParams.set("filters", JSON.stringify(filters));
 
   const controller = new AbortController();
@@ -142,29 +142,25 @@ async function fetchTweetsFromRapidAPI(
   }
 
   const entries = data.entries?.[0]?.entries || [];
-  // Dump raw first entry structure for debugging
-  const firstEntryDump = entries[0]
-    ? JSON.stringify(entries[0]).slice(0, 400)
-    : "none";
   const debugParts: string[] = [
     `groups=${data.entries?.length ?? 0}`,
     `entries=${entries.length}`,
-    `firstEntry=${firstEntryDump}`,
   ];
 
+  let skippedNonTweet = 0;
   let skippedNoResult = 0;
   let skippedVideo = 0;
   let skippedParseError = 0;
-  const entryIds: string[] = [];
   const tweets: ParsedTweet[] = [];
 
   for (const entry of entries) {
-    entryIds.push(entry.entryId || "undefined");
+    // Skip cursor and non-tweet entries (people modules, etc.)
+    if (!entry.entryId?.startsWith("tweet-")) {
+      skippedNonTweet++;
+      continue;
+    }
 
-    // Accept both "tweet-" prefixed entries and entries with tweet_results
-    const result =
-      entry.content?.itemContent?.tweet_results?.result ||
-      entry.content?.content?.tweetResult?.result;
+    const result = entry.content?.itemContent?.tweet_results?.result;
     if (!result || result.__typename !== "Tweet") {
       skippedNoResult++;
       continue;
@@ -203,8 +199,7 @@ async function fetchTweetsFromRapidAPI(
 
   debugParts.push(
     `parsed=${tweets.length}`,
-    `skipped: noResult=${skippedNoResult} video=${skippedVideo} parseErr=${skippedParseError}`,
-    `entryIds=[${entryIds.join(", ")}]`
+    `skipped: nonTweet=${skippedNonTweet} noResult=${skippedNoResult} video=${skippedVideo} parseErr=${skippedParseError}`
   );
 
   return { tweets, debug: debugParts.join(", ") };

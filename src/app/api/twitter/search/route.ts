@@ -97,7 +97,7 @@ export async function POST(request: Request) {
       `https://twitter-aio.p.rapidapi.com/search/${encodeURIComponent(searchTerm)}`
     );
     searchUrl.searchParams.set("count", "20");
-    searchUrl.searchParams.set("category", "Top");
+    searchUrl.searchParams.set("category", "Latest");
     searchUrl.searchParams.set("filters", JSON.stringify(filters));
 
     // Fetch with timeout
