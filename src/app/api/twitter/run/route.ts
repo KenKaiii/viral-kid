@@ -669,9 +669,20 @@ export async function POST(request: Request) {
         reply: { in_reply_to_tweet_id: bestTweet.tweetId },
       });
       replyId = result.data.id;
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Failed to post reply";
+    } catch (error: unknown) {
+      // Extract full error detail from twitter-api-v2 ApiResponseError
+      let message = "Failed to post reply";
+      if (error && typeof error === "object") {
+        const err = error as {
+          code?: number;
+          data?: unknown;
+          message?: string;
+        };
+        const detail = err.data
+          ? JSON.stringify(err.data).slice(0, 300)
+          : err.message || "";
+        message = `code=${err.code || "?"} ${detail}`;
+      }
       await createLog(accountId, "error", `Twitter API error: ${message}`);
       return NextResponse.json({ error: message }, { status: 500 });
     }
