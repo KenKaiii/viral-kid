@@ -75,6 +75,10 @@ export async function GET(request: Request) {
       clientId: credentials.clientId,
       clientSecret: credentials.clientSecret ? "••••••••" : "",
       rapidApiKey: credentials.rapidApiKey ? "••••••••" : "",
+      apiKey: credentials.apiKey ? "••••••••" : "",
+      apiSecret: credentials.apiSecret ? "••••••••" : "",
+      accessTokenV1: credentials.accessTokenV1 ? "••••••••" : "",
+      accessSecretV1: credentials.accessSecretV1 ? "••••••••" : "",
       username: credentials.username,
       isConnected: !!credentials.accessToken,
       tokenStatus,
@@ -115,7 +119,15 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { clientId, clientSecret, rapidApiKey } = body;
+    const {
+      clientId,
+      clientSecret,
+      rapidApiKey,
+      apiKey,
+      apiSecret,
+      accessTokenV1,
+      accessSecretV1,
+    } = body;
 
     const updateData: Record<string, string> = {};
 
@@ -124,6 +136,12 @@ export async function POST(request: Request) {
       updateData.clientSecret = clientSecret;
     if (rapidApiKey && rapidApiKey !== "••••••••")
       updateData.rapidApiKey = rapidApiKey;
+    if (apiKey && apiKey !== "••••••••") updateData.apiKey = apiKey;
+    if (apiSecret && apiSecret !== "••••••••") updateData.apiSecret = apiSecret;
+    if (accessTokenV1 && accessTokenV1 !== "••••••••")
+      updateData.accessTokenV1 = accessTokenV1;
+    if (accessSecretV1 && accessSecretV1 !== "••••••••")
+      updateData.accessSecretV1 = accessSecretV1;
 
     const credentials = await db.twitterCredentials.update({
       where: { accountId },

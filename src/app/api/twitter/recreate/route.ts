@@ -516,6 +516,21 @@ export async function POST(request: Request) {
 
     // Step 5: Loop through tweets until one succeeds
     const twitterClient = new TwitterApi(accessToken);
+
+    // Create OAuth 1.0a client for media upload (v1.1 endpoint requires OAuth 1.0a)
+    const hasOAuth1 =
+      twitterCredentials.apiKey &&
+      twitterCredentials.apiSecret &&
+      twitterCredentials.accessTokenV1 &&
+      twitterCredentials.accessSecretV1;
+    const uploadClient = hasOAuth1
+      ? new TwitterApi({
+          appKey: twitterCredentials.apiKey,
+          appSecret: twitterCredentials.apiSecret,
+          accessToken: twitterCredentials.accessTokenV1,
+          accessSecret: twitterCredentials.accessSecretV1,
+        })
+      : null;
     const recreatePrompt =
       twitterConfig?.recreateSystemPrompt || DEFAULT_RECREATE_PROMPT;
 
@@ -558,39 +573,47 @@ export async function POST(request: Request) {
       // Step 5b: Handle images — download and upload to Twitter
       const uploadedMediaIds: string[] = [];
       if (hasImages) {
-        for (const imageUrl of tweet.imageUrls.slice(0, 4)) {
-          try {
-            const imageBuffer = await downloadImage(imageUrl);
-            if (!imageBuffer) {
+        if (!uploadClient) {
+          await createLog(
+            accountId,
+            "warning",
+            "OAuth 1.0a credentials not configured — skipping image upload"
+          );
+        } else {
+          for (const imageUrl of tweet.imageUrls.slice(0, 4)) {
+            try {
+              const imageBuffer = await downloadImage(imageUrl);
+              if (!imageBuffer) {
+                await createLog(
+                  accountId,
+                  "warning",
+                  `Failed to download image: ${imageUrl}`
+                );
+                continue;
+              }
+
+              const mediaId = await uploadClient.v1.uploadMedia(imageBuffer, {
+                mimeType: "image/jpeg",
+              });
+              uploadedMediaIds.push(mediaId);
+            } catch (error) {
+              const message =
+                error instanceof Error ? error.message : "Unknown error";
               await createLog(
                 accountId,
                 "warning",
-                `Failed to download image: ${imageUrl}`
+                `Failed to upload image to Twitter: ${message}`
               );
-              continue;
             }
+          }
 
-            const mediaId = await twitterClient.v1.uploadMedia(imageBuffer, {
-              mimeType: "image/jpeg",
-            });
-            uploadedMediaIds.push(mediaId);
-          } catch (error) {
-            const message =
-              error instanceof Error ? error.message : "Unknown error";
+          if (uploadedMediaIds.length > 0) {
             await createLog(
               accountId,
-              "warning",
-              `Failed to upload image to Twitter: ${message}`
+              "info",
+              `Uploaded ${uploadedMediaIds.length} image(s) to Twitter`
             );
           }
-        }
-
-        if (uploadedMediaIds.length > 0) {
-          await createLog(
-            accountId,
-            "info",
-            `Uploaded ${uploadedMediaIds.length} image(s) to Twitter`
-          );
         }
       }
 

@@ -134,11 +134,13 @@ model TwitterCredentials {
   clientSecret String  @default("")
   // Rapid API
   rapidApiKey String   @default("")
-  // OAuth 1.0a credentials (from Developer Portal) - kept for future use
-  apiKey      String   @default("")
-  apiSecret   String   @default("")
-  bearerToken String   @default("")
-  // User OAuth tokens (obtained after user login)
+  // OAuth 1.0a credentials (from Developer Portal — required for media upload)
+  apiKey             String   @default("") // Consumer Key (API Key)
+  apiSecret          String   @default("") // Consumer Secret (API Secret)
+  bearerToken        String   @default("")
+  accessTokenV1      String   @default("") // OAuth 1.0a Access Token
+  accessSecretV1     String   @default("") // OAuth 1.0a Access Token Secret
+  // User OAuth 2.0 tokens (obtained after user login)
   accessToken       String?
   refreshToken      String?
   tokenExpiresAt    DateTime?

@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "TwitterCredentials" ADD COLUMN IF NOT EXISTS "accessTokenV1" TEXT NOT NULL DEFAULT '';
+ALTER TABLE "TwitterCredentials" ADD COLUMN IF NOT EXISTS "accessSecretV1" TEXT NOT NULL DEFAULT '';

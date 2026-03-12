@@ -9,8 +9,6 @@ import {
   Loader2,
   Trash2,
   Database,
-  Eye,
-  Heart,
   MessageCircle,
   ArrowUp,
   ExternalLink,
@@ -18,16 +16,15 @@ import {
 import toast from "react-hot-toast";
 import { IconButton } from "@/components/ui/icon-button";
 
-interface TweetInteraction {
+interface RecreatedTweet {
   id: string;
-  tweetId: string;
-  userTweet: string;
-  username: string;
-  views: number;
-  hearts: number;
-  replies: number;
-  ourReply: string | null;
-  repliedAt: string | null;
+  originalTweetId: string;
+  originalText: string;
+  originalUsername: string;
+  originalImageUrls: string;
+  recreatedText: string;
+  recreatedTweetId: string | null;
+  postedAt: string | null;
   createdAt: string;
 }
 
@@ -208,7 +205,7 @@ export function DatabaseModal({
 }: DatabaseModalProps) {
   useEscapeClose(isOpen, onClose);
   // Data states
-  const [tweets, setTweets] = useState<TweetInteraction[]>([]);
+  const [tweets, setTweets] = useState<RecreatedTweet[]>([]);
   const [redditInteractions, setRedditInteractions] = useState<
     RedditInteraction[]
   >([]);
@@ -426,18 +423,16 @@ export function DatabaseModal({
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-white/10 text-left text-xs uppercase tracking-wider text-white/50">
-                        <th className="px-3 py-3 font-medium">User Tweet</th>
-                        <th className="w-20 px-3 py-3 text-center font-medium">
-                          <Eye className="mx-auto h-4 w-4" />
+                        <th className="px-3 py-3 font-medium">
+                          Original Tweet
                         </th>
-                        <th className="w-20 px-3 py-3 text-center font-medium">
-                          <Heart className="mx-auto h-4 w-4" />
+                        <th className="px-3 py-3 font-medium">
+                          Recreated Tweet
                         </th>
-                        <th className="w-20 px-3 py-3 text-center font-medium">
-                          <MessageCircle className="mx-auto h-4 w-4" />
+                        <th className="w-24 px-3 py-3 text-center font-medium">
+                          Status
                         </th>
                         <th className="w-28 px-3 py-3 font-medium">Time</th>
-                        <th className="px-3 py-3 font-medium">Our Reply</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -450,29 +445,31 @@ export function DatabaseModal({
                           className="border-b border-white/5 transition-colors hover:bg-white/5"
                         >
                           <TweetCell
-                            text={tweet.userTweet}
-                            username={tweet.username}
+                            text={tweet.originalText}
+                            username={tweet.originalUsername}
                           />
-                          <td className="px-3 py-3 text-center text-sm text-white/60">
-                            {formatNumber(tweet.views)}
-                          </td>
-                          <td className="px-3 py-3 text-center text-sm text-white/60">
-                            {formatNumber(tweet.hearts)}
-                          </td>
-                          <td className="px-3 py-3 text-center text-sm text-white/60">
-                            {formatNumber(tweet.replies ?? 0)}
-                          </td>
-                          <td className="px-3 py-3 text-xs text-white/50">
-                            {formatTimestamp(tweet.createdAt)}
-                          </td>
                           <td className="relative max-w-xs px-3 py-3">
-                            {tweet.ourReply ? (
-                              <TruncatedText text={tweet.ourReply} />
+                            <TruncatedText text={tweet.recreatedText} />
+                          </td>
+                          <td className="px-3 py-3 text-center">
+                            {tweet.recreatedTweetId ? (
+                              <a
+                                href={`https://twitter.com/i/status/${tweet.recreatedTweetId}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-xs text-green-400/80 transition-colors hover:text-green-400"
+                              >
+                                Posted
+                                <ExternalLink className="h-3 w-3" />
+                              </a>
                             ) : (
-                              <span className="text-xs text-white/30">
-                                No reply
+                              <span className="text-xs text-yellow-400/60">
+                                Pending
                               </span>
                             )}
+                          </td>
+                          <td className="px-3 py-3 text-xs text-white/50">
+                            {formatTimestamp(tweet.postedAt || tweet.createdAt)}
                           </td>
                         </motion.tr>
                       ))}

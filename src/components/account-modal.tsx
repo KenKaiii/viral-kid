@@ -35,6 +35,10 @@ interface TwitterCredentialsState {
   clientId: string;
   clientSecret: string;
   rapidApiKey: string;
+  apiKey: string;
+  apiSecret: string;
+  accessTokenV1: string;
+  accessSecretV1: string;
   username?: string;
   isConnected: boolean;
   tokenStatus: TokenStatus;
@@ -79,6 +83,10 @@ export function AccountModal({
     clientId: "",
     clientSecret: "",
     rapidApiKey: "",
+    apiKey: "",
+    apiSecret: "",
+    accessTokenV1: "",
+    accessSecretV1: "",
     isConnected: false,
     tokenStatus: "not_connected",
     tokenExpiresAt: null,
@@ -169,6 +177,10 @@ export function AccountModal({
               clientId: data.clientId || "",
               clientSecret: data.clientSecret || "",
               rapidApiKey: data.rapidApiKey || "",
+              apiKey: data.apiKey || "",
+              apiSecret: data.apiSecret || "",
+              accessTokenV1: data.accessTokenV1 || "",
+              accessSecretV1: data.accessSecretV1 || "",
               username: data.username,
               isConnected: !!data.username,
               tokenStatus: data.tokenStatus || "not_connected",
@@ -275,6 +287,10 @@ export function AccountModal({
             clientId: credentials.clientId,
             clientSecret: credentials.clientSecret,
             rapidApiKey: credentials.rapidApiKey,
+            apiKey: credentials.apiKey,
+            apiSecret: credentials.apiSecret,
+            accessTokenV1: credentials.accessTokenV1,
+            accessSecretV1: credentials.accessSecretV1,
           }),
         }
       );
@@ -366,7 +382,14 @@ export function AccountModal({
   };
 
   const updateCredential = (
-    key: "clientId" | "clientSecret" | "rapidApiKey"
+    key:
+      | "clientId"
+      | "clientSecret"
+      | "rapidApiKey"
+      | "apiKey"
+      | "apiSecret"
+      | "accessTokenV1"
+      | "accessSecretV1"
   ) => {
     return (value: string) => {
       setCredentials((prev) => ({ ...prev, [key]: value }));
@@ -1183,6 +1206,54 @@ export function AccountModal({
                       <ExternalLink className="h-4 w-4" />
                       Get RapidAPI Key
                     </a>
+
+                    {/* OAuth 1.0a - for media upload */}
+                    <div className="mt-6">
+                      <h3 className="mb-2 text-sm font-semibold tracking-wide text-white/90">
+                        OAuth 1.0a (Media Upload)
+                      </h3>
+                      <p className="mb-4 text-xs text-white/50">
+                        Required for uploading images with recreated tweets.
+                        Find these under &quot;Keys and Tokens&quot; in the
+                        Developer Portal.
+                      </p>
+
+                      <CredentialInput
+                        id="apiKey"
+                        label="API Key (Consumer Key)"
+                        value={credentials.apiKey}
+                        onChange={updateCredential("apiKey")}
+                        placeholder="Enter API Key..."
+                        type="password"
+                      />
+
+                      <CredentialInput
+                        id="apiSecret"
+                        label="API Secret (Consumer Secret)"
+                        value={credentials.apiSecret}
+                        onChange={updateCredential("apiSecret")}
+                        placeholder="Enter API Secret..."
+                        type="password"
+                      />
+
+                      <CredentialInput
+                        id="accessTokenV1"
+                        label="Access Token"
+                        value={credentials.accessTokenV1}
+                        onChange={updateCredential("accessTokenV1")}
+                        placeholder="Enter Access Token..."
+                        type="password"
+                      />
+
+                      <CredentialInput
+                        id="accessSecretV1"
+                        label="Access Token Secret"
+                        value={credentials.accessSecretV1}
+                        onChange={updateCredential("accessSecretV1")}
+                        placeholder="Enter Access Token Secret..."
+                        type="password"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
