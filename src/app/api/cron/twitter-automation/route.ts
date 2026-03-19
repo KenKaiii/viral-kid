@@ -55,6 +55,11 @@ export async function GET(request: Request): Promise<NextResponse> {
       return true;
     });
 
+    console.log(
+      `Twitter reply: ${accountsToProcess.length}/${enabledConfigs.length} accounts pass schedule filter ` +
+        `(schedules: ${enabledConfigs.map((c) => c.schedule).join(", ")})`
+    );
+
     // Process accounts in parallel
     const CONCURRENCY_LIMIT = 25;
     const baseUrl = getBaseUrl(request);
@@ -132,6 +137,11 @@ export async function GET(request: Request): Promise<NextResponse> {
 
       return true;
     });
+
+    console.log(
+      `Twitter recreate: ${recreateAccountsToProcess.length}/${recreateConfigs.length} accounts pass schedule filter ` +
+        `(schedules: ${recreateConfigs.map((c) => c.recreateSchedule).join(", ")})`
+    );
 
     const processRecreateAccount = async (
       config: (typeof recreateAccountsToProcess)[0]

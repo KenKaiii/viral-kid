@@ -55,6 +55,13 @@ export async function GET(request: Request): Promise<NextResponse> {
       return true;
     });
 
+    if (enabledConfigs.length > 0) {
+      console.log(
+        `Reddit: ${accountsToProcess.length}/${enabledConfigs.length} accounts pass schedule filter ` +
+          `(schedules: ${enabledConfigs.map((c) => c.schedule).join(", ")})`
+      );
+    }
+
     // Process accounts in parallel
     const CONCURRENCY_LIMIT = 25;
     const baseUrl = getBaseUrl(request);
