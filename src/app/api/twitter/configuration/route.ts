@@ -49,6 +49,7 @@ export async function GET(request: Request) {
       recreateEnabled: config.recreateEnabled,
       recreateSchedule: config.recreateSchedule,
       recreateSystemPrompt: config.recreateSystemPrompt,
+      negativeKeywords: config.negativeKeywords,
     });
   } catch (error) {
     console.error("Failed to fetch Twitter configuration:", error);
@@ -95,6 +96,7 @@ export async function POST(request: Request) {
       recreateEnabled,
       recreateSchedule,
       recreateSystemPrompt,
+      negativeKeywords,
     } = body;
 
     // Validate schedule value
@@ -148,6 +150,7 @@ export async function POST(request: Request) {
         ...(typeof recreateEnabled === "boolean" && { recreateEnabled }),
         ...(recreateSchedule && { recreateSchedule }),
         ...(recreateSystemPrompt !== undefined && { recreateSystemPrompt }),
+        ...(negativeKeywords !== undefined && { negativeKeywords }),
       },
     });
 
@@ -162,6 +165,7 @@ export async function POST(request: Request) {
       recreateEnabled: config.recreateEnabled,
       recreateSchedule: config.recreateSchedule,
       recreateSystemPrompt: config.recreateSystemPrompt,
+      negativeKeywords: config.negativeKeywords,
     });
   } catch (error) {
     console.error("Failed to save Twitter configuration:", error);

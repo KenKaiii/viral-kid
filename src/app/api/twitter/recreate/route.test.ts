@@ -92,6 +92,7 @@ const validConfig = {
   removePostsWithMedia: false,
   recreateSystemPrompt: null,
   recreateEnabled: true,
+  negativeKeywords: "",
 };
 
 const validOpenRouter = {
@@ -580,6 +581,171 @@ describe("Twitter Recreate API", () => {
     expect(data.recreated).toBe(true);
     expect(data.originalBy).toBe("b");
     expect(data.originalTweetId).toBe("high");
+  });
+
+  // --- Negative keywords filtering ---
+
+  it("filters out tweets containing a negative keyword", async () => {
+    mockAuth.mockResolvedValueOnce({
+      user: { id: "user-1" },
+      expires: "",
+    });
+    mockAccountFindFirst.mockResolvedValueOnce({
+      ...fullAccount,
+      twitterConfig: { ...validConfig, negativeKeywords: "politics" },
+    });
+    mockRecreatedTweetFindMany.mockResolvedValueOnce([]);
+    mockRecreatedTweetCreate.mockResolvedValueOnce({});
+    mockTweet.mockResolvedValueOnce({ data: { id: "posted-1" } });
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () =>
+        makeRapidAPIResponse([
+          {
+            id: "t1",
+            text: "Breaking politics news today",
+            username: "newsbot",
+            likes: 500,
+          },
+          {
+            id: "t2",
+            text: "Amazing tech breakthrough",
+            username: "techguru",
+            likes: 200,
+          },
+        ]),
+    });
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => makeOpenRouterResponse("recreated tech tweet"),
+    });
+
+    const response = await POST(createPostRequest({ accountId: "acc-1" }));
+    const data = await response.json();
+
+    expect(data.recreated).toBe(true);
+    expect(data.originalBy).toBe("techguru");
+    expect(data.originalTweetId).toBe("t2");
+  });
+
+  it("filters with multiple negative keywords", async () => {
+    mockAuth.mockResolvedValueOnce({
+      user: { id: "user-1" },
+      expires: "",
+    });
+    mockAccountFindFirst.mockResolvedValueOnce({
+      ...fullAccount,
+      twitterConfig: { ...validConfig, negativeKeywords: "politics, spam" },
+    });
+    mockRecreatedTweetFindMany.mockResolvedValueOnce([]);
+    mockRecreatedTweetCreate.mockResolvedValueOnce({});
+    mockTweet.mockResolvedValueOnce({ data: { id: "posted-1" } });
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () =>
+        makeRapidAPIResponse([
+          {
+            id: "t1",
+            text: "Politics update",
+            username: "news",
+            likes: 500,
+          },
+          {
+            id: "t2",
+            text: "Buy this spam product",
+            username: "spammer",
+            likes: 300,
+          },
+          {
+            id: "t3",
+            text: "Cool tech stuff",
+            username: "dev",
+            likes: 100,
+          },
+        ]),
+    });
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => makeOpenRouterResponse("recreated cool tech"),
+    });
+
+    const response = await POST(createPostRequest({ accountId: "acc-1" }));
+    const data = await response.json();
+
+    expect(data.recreated).toBe(true);
+    expect(data.originalBy).toBe("dev");
+  });
+
+  it("matches negative keywords case-insensitively", async () => {
+    mockAuth.mockResolvedValueOnce({
+      user: { id: "user-1" },
+      expires: "",
+    });
+    mockAccountFindFirst.mockResolvedValueOnce({
+      ...fullAccount,
+      twitterConfig: { ...validConfig, negativeKeywords: "NSFW" },
+    });
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () =>
+        makeRapidAPIResponse([
+          {
+            id: "t1",
+            text: "This is nsfw content",
+            username: "user",
+            likes: 100,
+          },
+        ]),
+    });
+
+    const response = await POST(createPostRequest({ accountId: "acc-1" }));
+    const data = await response.json();
+
+    expect(data.recreated).toBe(false);
+    expect(data.message).toBe("No tweets found matching criteria");
+  });
+
+  it("does not filter when negativeKeywords is empty", async () => {
+    mockAuth.mockResolvedValueOnce({
+      user: { id: "user-1" },
+      expires: "",
+    });
+    mockAccountFindFirst.mockResolvedValueOnce({
+      ...fullAccount,
+      twitterConfig: { ...validConfig, negativeKeywords: "" },
+    });
+    mockRecreatedTweetFindMany.mockResolvedValueOnce([]);
+    mockRecreatedTweetCreate.mockResolvedValueOnce({});
+    mockTweet.mockResolvedValueOnce({ data: { id: "posted-1" } });
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () =>
+        makeRapidAPIResponse([
+          {
+            id: "t1",
+            text: "Politics and spam tweet",
+            username: "user",
+            likes: 100,
+          },
+        ]),
+    });
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => makeOpenRouterResponse("recreated tweet"),
+    });
+
+    const response = await POST(createPostRequest({ accountId: "acc-1" }));
+    const data = await response.json();
+
+    expect(data.recreated).toBe(true);
+    expect(data.originalBy).toBe("user");
   });
 
   // --- LLM error ---

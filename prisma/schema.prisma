@@ -119,6 +119,7 @@ model TwitterConfiguration {
   recreateEnabled      Boolean  @default(false) // Whether the recreate pipeline is active
   recreateSchedule     String   @default("every_hour") // Schedule for recreate pipeline
   recreateSystemPrompt String?  // Optional custom system prompt for rewriting tweets
+  negativeKeywords     String   @default("") // Comma-separated negative keywords to exclude tweets
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 

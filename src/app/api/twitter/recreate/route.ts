@@ -98,8 +98,14 @@ async function fetchTweetsFromRapidAPI(
     removePostsWithLinks: filterConfig.removePostsWithLinks,
   };
 
+  // Auto-wrap multi-word search terms in quotes for exact phrase matching
+  const normalizedTerm =
+    searchTerm.includes(" ") && !searchTerm.startsWith('"')
+      ? `"${searchTerm}"`
+      : searchTerm;
+
   const searchUrl = new URL(
-    `https://twitter-aio.p.rapidapi.com/search/${encodeURIComponent(searchTerm)}`
+    `https://twitter-aio.p.rapidapi.com/search/${encodeURIComponent(normalizedTerm)}`
   );
   searchUrl.searchParams.set("count", "20");
   searchUrl.searchParams.set("category", "Latest");
@@ -447,9 +453,31 @@ export async function POST(request: Request) {
     );
 
     // Client-side filter as fallback
-    const tweets = fetchResult.tweets.filter(
+    const likesFilteredTweets = fetchResult.tweets.filter(
       (t) => t.hearts >= minimumLikesCount
     );
+
+    // Filter out tweets containing negative keywords
+    const negativeKeywords = (twitterConfig?.negativeKeywords || "")
+      .split(",")
+      .map((k) => k.trim().toLowerCase())
+      .filter(Boolean);
+
+    const tweets =
+      negativeKeywords.length > 0
+        ? likesFilteredTweets.filter((t) => {
+            const text = t.userTweet.toLowerCase();
+            return !negativeKeywords.some((kw) => text.includes(kw));
+          })
+        : likesFilteredTweets;
+
+    if (tweets.length < likesFilteredTweets.length) {
+      await createLog(
+        accountId,
+        "info",
+        `Filtered out ${likesFilteredTweets.length - tweets.length} tweets by negative keywords`
+      );
+    }
 
     if (tweets.length === 0) {
       await createLog(

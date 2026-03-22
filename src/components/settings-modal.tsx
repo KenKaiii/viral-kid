@@ -46,6 +46,7 @@ export function SettingsModal({
   const [removeReplies, setRemoveReplies] = useState(true);
   const [removePostsWithLinks, setRemovePostsWithLinks] = useState(false);
   const [removePostsWithMedia, setRemovePostsWithMedia] = useState(false);
+  const [negativeKeywords, setNegativeKeywords] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -139,6 +140,9 @@ export function SettingsModal({
           if (data.removePostsWithMedia !== undefined) {
             setRemovePostsWithMedia(data.removePostsWithMedia);
           }
+          if (data.negativeKeywords !== undefined) {
+            setNegativeKeywords(data.negativeKeywords);
+          }
           // Reddit-specific
           if (data.keywords !== undefined) {
             setKeywords(data.keywords);
@@ -186,6 +190,7 @@ export function SettingsModal({
           removeReplies,
           removePostsWithLinks,
           removePostsWithMedia,
+          negativeKeywords,
         });
       } else if (platform === "reddit") {
         body = JSON.stringify({
@@ -423,6 +428,42 @@ export function SettingsModal({
                         </div>
                       </label>
                     </div>
+                  </div>
+                )}
+
+                {/* Negative Keywords - Twitter only */}
+                {platform === "twitter" && (
+                  <div className="mb-5">
+                    <label
+                      htmlFor="negativeKeywords"
+                      className="mb-2 block text-sm font-semibold tracking-wide text-white/90"
+                    >
+                      Negative Keywords
+                    </label>
+                    <textarea
+                      id="negativeKeywords"
+                      value={negativeKeywords}
+                      onChange={(e) => setNegativeKeywords(e.target.value)}
+                      placeholder="trump, politics, nsfw, spam"
+                      rows={3}
+                      className="w-full rounded-lg border px-4 py-3 text-white/90 outline-none transition-colors duration-200 resize-none"
+                      style={{
+                        background: "rgba(255,255,255,0.05)",
+                        borderColor: "rgba(255,255,255,0.1)",
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = "rgba(255,255,255,0.3)";
+                        e.target.style.background = "rgba(255,255,255,0.08)";
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = "rgba(255,255,255,0.1)";
+                        e.target.style.background = "rgba(255,255,255,0.05)";
+                      }}
+                    />
+                    <p className="mt-1 text-xs text-white/40">
+                      Comma-separated. Tweets containing any of these words will
+                      be skipped.
+                    </p>
                   </div>
                 )}
 
