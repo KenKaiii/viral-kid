@@ -2,6 +2,9 @@
 
 Track viral content across Twitter, YouTube, Reddit & Instagram from one dashboard. Monitor trends, manage multiple accounts, and automate replies.
 
+> [!TIP]
+> **Want to build your own apps with AI?** A free 7-day build challenge and 20+ step-by-step projects are in my free community: **[skool.com/raid](https://www.skool.com/raid)**
+
 ## What It Does
 
 - **Multi-Platform Tracking** - Monitor viral content across Twitter, YouTube, Reddit, and Instagram
@@ -56,7 +59,7 @@ Open [localhost:3000](http://localhost:3000) to access the dashboard.
 Built by [Ken](https://github.com/KenKaiii)
 
 - [YouTube](https://www.youtube.com/@kenkaidoesai)
-- [Skool Community](https://www.skool.com/kenkai)
+- [Free Skool community](https://www.skool.com/raid): a 7-day build challenge and 20+ step-by-step projects
 
 ## License
 
