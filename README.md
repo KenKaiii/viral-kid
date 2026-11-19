@@ -4,7 +4,6 @@ Track viral content across Twitter, YouTube, Reddit & Instagram from one dashboa
 
 > [!TIP]
 > **Want to build your own apps with AI?**
-> - **Free community:** setup guides, a 7-day build challenge and 20+ projects: [skool.com/raid](https://www.skool.com/raid)
 > - **Raid+:** make money with AI, a sellable app in 30 days, live every Thursday: [skool.com/kenkai](https://www.skool.com/kenkai)
 > - **Want it built for you?** [work.kenkais.com](https://work.kenkais.com/)
 
@@ -62,7 +61,6 @@ Open [localhost:3000](http://localhost:3000) to access the dashboard.
 Built by [Ken](https://github.com/KenKaiii)
 
 - [YouTube](https://www.youtube.com/@kenkaidoesai)
-- [Free Skool community](https://www.skool.com/raid): a 7-day build challenge and 20+ step-by-step projects
 - [Raid+](https://www.skool.com/kenkai): make money with AI, a sellable app in 30 days, live every Thursday
 - [work.kenkais.com](https://work.kenkais.com/): want it built for you?
 
